@@ -40,4 +40,17 @@ class AppConstants {
     'Bi-weekly',
     'Monthly',
   ];
+
+  static const List<Map<String, String>> countryCodes = [
+    {'code': '+237', 'flag': '🇨🇲', 'name': 'Cameroon'},
+    {'code': '+234', 'flag': '🇳🇬', 'name': 'Nigeria'},
+    {'code': '+233', 'flag': '🇬🇭', 'name': 'Ghana'},
+    {'code': '+225', 'flag': '🇨🇮', 'name': "Côte d'Ivoire"},
+    {'code': '+221', 'flag': '🇸🇳', 'name': 'Senegal'},
+    {'code': '+254', 'flag': '🇰🇪', 'name': 'Kenya'},
+    {'code': '+27', 'flag': '🇿🇦', 'name': 'South Africa'},
+    {'code': '+1', 'flag': '🇺🇸', 'name': 'United States'},
+    {'code': '+44', 'flag': '🇬🇧', 'name': 'United Kingdom'},
+    {'code': '+33', 'flag': '🇫🇷', 'name': 'France'},
+  ];
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/providers.dart';
@@ -21,6 +23,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  String _countryCode = '+237';
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -40,7 +43,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       await ref.read(authStateProvider.notifier).register(
             fullName: _nameController.text.trim(),
             email: _emailController.text.trim(),
-            phone: _phoneController.text.trim(),
+            phone: '$_countryCode${_phoneController.text.trim()}',
             password: _passwordController.text,
           );
       if (mounted) context.go(AppRoutes.verifyPhone);
@@ -90,13 +93,56 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   prefixIcon: const Icon(Icons.person_outline),
                 ),
                 const SizedBox(height: 16),
-                CustomTextField(
-                  label: 'Phone Number',
-                  controller: _phoneController,
-                  hint: '+237 6XX XXX XXX',
-                  keyboardType: TextInputType.phone,
-                  validator: Validators.phone,
-                  prefixIcon: const Icon(Icons.phone_outlined),
+                Text(
+                  'Phone Number',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.darkGray,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 130,
+                      child: DropdownButtonFormField<String>(
+                        initialValue: _countryCode,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                        ),
+                        items: AppConstants.countryCodes
+                            .map(
+                              (country) => DropdownMenuItem(
+                                value: country['code'],
+                                child: Text(
+                                  '${country['flag']} ${country['code']}',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _countryCode = value);
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        validator: Validators.phone,
+                        decoration: const InputDecoration(
+                          hintText: '6XX XXX XXX',
+                          prefixIcon: Icon(Icons.phone_outlined),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 CustomTextField(
