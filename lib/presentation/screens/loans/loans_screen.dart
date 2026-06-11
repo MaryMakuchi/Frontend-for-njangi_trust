@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/api_helper.dart';
-import '../../../core/utils/formatters.dart';
 import '../../../core/utils/input_formatters.dart';
 import '../../../domain/entities/loan_entity.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
+import '../../widgets/balance_text.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 
@@ -71,13 +71,27 @@ class LoansScreen extends ConsumerWidget {
                         style: TextStyle(color: AppColors.white),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'Up to ${Formatters.currency(max)}',
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Up to ',
+                            style: TextStyle(
+                              color: AppColors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          BalanceText(
+                            max,
+                            style: const TextStyle(
+                              color: AppColors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                            ),
+                            iconColor: AppColors.white,
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       const Text(
@@ -139,7 +153,13 @@ class _LoanCardState extends ConsumerState<_LoanCard> {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text('Group: ${loan.groupName}'),
                 ),
-              Text('Remaining balance: ${Formatters.currency(loan.remainingBalance ?? 0)}'),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Remaining balance: '),
+                  BalanceText(loan.remainingBalance ?? 0),
+                ],
+              ),
               const SizedBox(height: 16),
               CustomTextField(
                 label: 'Amount (CFA)',
@@ -230,8 +250,8 @@ class _LoanCardState extends ConsumerState<_LoanCard> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            Formatters.currency(loan.amount),
+          BalanceText(
+            loan.amount,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           if (loan.groupName != null)
@@ -248,9 +268,18 @@ class _LoanCardState extends ConsumerState<_LoanCard> {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
-              'Remaining: ${Formatters.currency(loan.remainingBalance ?? 0)}',
-              style: Theme.of(context).textTheme.bodySmall,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Remaining: ',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                BalanceText(
+                  loan.remainingBalance ?? 0,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             CustomButton(

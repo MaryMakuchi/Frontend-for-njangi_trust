@@ -8,6 +8,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/utils/input_formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/providers.dart';
+import '../../widgets/balance_text.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 
@@ -92,10 +93,22 @@ class _RequestLoanScreenState extends ConsumerState<RequestLoanScreen> {
                     color: AppColors.purpleSurface,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    'You are eligible to request up to ${Formatters.currency(max)} '
-                    'based on your MRI Score.',
-                    style: Theme.of(context).textTheme.bodySmall,
+                  child: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        'You are eligible to request up to ',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      BalanceText(
+                        max,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      Text(
+                        ' based on your MRI Score.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ),
                 ),
               ),

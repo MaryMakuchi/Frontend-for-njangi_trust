@@ -8,6 +8,7 @@ import '../../../core/utils/input_formatters.dart';
 import '../../../domain/entities/group_entity.dart';
 import '../../../domain/entities/social_fund_entity.dart';
 import '../../providers/providers.dart';
+import '../../widgets/balance_text.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 
@@ -100,6 +101,7 @@ class _GroupHeader extends StatelessWidget {
               _HeaderStat(
                 label: 'Balance',
                 value: Formatters.currency(group.fundBalance),
+                amount: group.fundBalance,
               ),
               _HeaderStat(
                 label: 'MRI Avg',
@@ -239,13 +241,19 @@ class _PlayNjangiSheet extends StatelessWidget {
 }
 
 class _HeaderStat extends StatelessWidget {
-  const _HeaderStat({required this.label, required this.value});
+  const _HeaderStat({required this.label, required this.value, this.amount});
 
   final String label;
   final String value;
+  final double? amount;
 
   @override
   Widget build(BuildContext context) {
+    const valueStyle = TextStyle(
+      color: AppColors.white,
+      fontWeight: FontWeight.w700,
+      fontSize: 14,
+    );
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,14 +265,13 @@ class _HeaderStat extends StatelessWidget {
               fontSize: 11,
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppColors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-            ),
-          ),
+          amount != null
+              ? BalanceText(
+                  amount!,
+                  style: valueStyle,
+                  iconColor: AppColors.white,
+                )
+              : Text(value, style: valueStyle),
         ],
       ),
     );
@@ -291,13 +298,21 @@ class _OverviewTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _InfoRow('Contribution', Formatters.currency(group.contributionAmount)),
+        _InfoRow(
+          'Contribution',
+          Formatters.currency(group.contributionAmount),
+          amount: group.contributionAmount,
+        ),
         _InfoRow('Frequency', group.frequency),
         _InfoRow('Start Date', Formatters.date(group.startDate)),
         _InfoRow('Duration', '${group.durationMonths} months'),
         _InfoRow('Exhaustion Date', Formatters.date(group.effectiveEndDate)),
         if (group.targetAmount != null)
-          _InfoRow('Target Picking Amount', Formatters.currency(group.targetAmount!)),
+          _InfoRow(
+            'Target Picking Amount',
+            Formatters.currency(group.targetAmount!),
+            amount: group.targetAmount!,
+          ),
         _InfoRow('Pickers per Cycle', '${group.pickersPerCycle}'),
         _InfoRow('Cycle Progress', '${group.cycleProgress}/${group.maxMembers}'),
         if (group.invitationCode != null)
@@ -738,14 +753,23 @@ class _SocialFundCardState extends ConsumerState<_SocialFundCard> {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
-          Text(
-            Formatters.currency(fund.balance),
+          BalanceText(
+            fund.balance,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           if (fund.targetAmount != null)
-            Text(
-              'Target: ${Formatters.currency(fund.targetAmount!)}',
-              style: Theme.of(context).textTheme.bodySmall,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Target: ',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                BalanceText(
+                  fund.targetAmount!,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
           const SizedBox(height: 12),
           Row(
@@ -785,7 +809,7 @@ class _SocialFundCardState extends ConsumerState<_SocialFundCard> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(c.userName),
                 subtitle: Text(Formatters.date(c.createdAt)),
-                trailing: Text(Formatters.currency(c.amount)),
+                trailing: BalanceText(c.amount),
               ),
             ),
           ],
@@ -902,6 +926,7 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: CustomTextField(
@@ -910,15 +935,18 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton.filled(
-                  onPressed: _isSending ? null : _send,
-                  icon: _isSending
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
-                        )
-                      : const Icon(Icons.send),
+                Padding(
+                  padding: const EdgeInsets.only(top: 24),
+                  child: IconButton.filled(
+                    onPressed: _isSending ? null : _send,
+                    icon: _isSending
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                          )
+                        : const Icon(Icons.send),
+                  ),
                 ),
               ],
             ),
@@ -930,23 +958,24 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow(this.label, this.value);
+  const _InfoRow(this.label, this.value, {this.amount});
 
   final String label;
   final String value;
+  final double? amount;
 
   @override
   Widget build(BuildContext context) {
+    final valueStyle = Theme.of(context).textTheme.titleSmall;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
+          amount != null
+              ? BalanceText(amount!, style: valueStyle)
+              : Text(value, style: valueStyle),
         ],
       ),
     );

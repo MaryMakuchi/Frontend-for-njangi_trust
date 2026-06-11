@@ -103,6 +103,7 @@ class DashboardScreen extends ConsumerWidget {
                         FinancialSummaryCard(
                           label: AppStrings.totalSavings,
                           value: Formatters.currency(dashboard.totalSavings),
+                          amount: dashboard.totalSavings,
                           icon: Icons.savings_outlined,
                           iconColor: AppColors.indigo,
                           onTap: () => context.push(AppRoutes.savings),
@@ -111,6 +112,7 @@ class DashboardScreen extends ConsumerWidget {
                         FinancialSummaryCard(
                           label: AppStrings.activeLoans,
                           value: Formatters.currency(dashboard.activeLoansAmount),
+                          amount: dashboard.activeLoansAmount,
                           icon: Icons.account_balance_outlined,
                           iconColor: AppColors.violet,
                           onTap: () => context.go(AppRoutes.loans),
@@ -119,16 +121,18 @@ class DashboardScreen extends ConsumerWidget {
                         FinancialSummaryCard(
                           label: AppStrings.socialFund,
                           value: Formatters.currency(dashboard.socialFundBalance),
+                          amount: dashboard.socialFundBalance,
                           icon: Icons.favorite_outline,
                           iconColor: AppColors.orchid,
                           onTap: () => context.push(AppRoutes.socialFund),
                         ),
                         const SizedBox(width: 12),
-                        FinancialSummaryCard(
+                        _CurrentPayoutCard(
                           label: AppStrings.currentPayout,
-                          value: Formatters.currency(dashboard.currentPayout),
+                          amount: dashboard.currentPayout,
                           icon: Icons.payments_outlined,
                           iconColor: AppColors.secondary,
+                          onWalletTap: () => context.push(AppRoutes.walletAccounts),
                         ),
                       ],
                     ),
@@ -166,22 +170,14 @@ class DashboardScreen extends ConsumerWidget {
                                 ],
                               ),
                             ),
-                            Text(
-                              Formatters.currency(dashboard.currentPayout),
+                            BalanceText(
+                              dashboard.currentPayout,
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.w700,
                                   ),
+                              iconColor: AppColors.purple,
                             ),
                           ],
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () => context.push(AppRoutes.walletAccounts),
-                            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
-                            label: const Text('Add Wallet'),
-                          ),
                         ),
                       ],
                     ),
@@ -244,6 +240,100 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CurrentPayoutCard extends StatelessWidget {
+  const _CurrentPayoutCard({
+    required this.label,
+    required this.amount,
+    required this.icon,
+    this.iconColor,
+    this.onWalletTap,
+  });
+
+  final String label;
+  final double amount;
+  final IconData icon;
+  final Color? iconColor;
+  final VoidCallback? onWalletTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = iconColor ?? AppColors.primary;
+
+    return Container(
+        width: 148,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: tint.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 17, color: tint),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.mediumGray,
+                    fontSize: 11,
+                    height: 1.1,
+                  ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: BalanceText(
+                      amount,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            height: 1.1,
+                            color: AppColors.darkGray,
+                          ),
+                      iconColor: AppColors.mediumGray,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: onWalletTap,
+                  child: Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 14,
+                    color: AppColors.mediumGray,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
     );
   }
 }
