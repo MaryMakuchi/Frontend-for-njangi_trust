@@ -7,7 +7,12 @@ abstract class LoanRepository {
     required double amount,
     required String purpose,
     required int durationMonths,
-    String? groupId,
+    required String groupId,
   });
   Future<LoanEntity> repayLoan({required String loanId, required double amount});
+  Future<List<PendingLoanVoteEntity>> getPendingVotes();
+  Future<LoanVoteResultEntity> voteOnLoan({
+    required String loanId,
+    required LoanVoteDecision decision,
+  });
 }

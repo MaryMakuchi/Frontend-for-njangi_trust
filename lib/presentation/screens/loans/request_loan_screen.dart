@@ -36,20 +36,36 @@ class _RequestLoanScreenState extends ConsumerState<RequestLoanScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_groupId == null) {
+      setState(() {});
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       await ref.read(loanRepositoryProvider).requestLoan(
             amount: double.parse(_amountController.text.replaceAll(',', '')),
             purpose: _purposeController.text.trim(),
             durationMonths: _duration,
-            groupId: _groupId,
+            groupId: _groupId!,
           );
       ref.invalidate(loansProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Loan request submitted!')),
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Request Submitted'),
+            content: const Text(
+              'Your loan request is pending approval from your group members.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
         );
-        context.pop();
+        if (mounted) context.pop();
       }
     } catch (e) {
       if (mounted) {
@@ -158,26 +174,36 @@ class _RequestLoanScreenState extends ConsumerState<RequestLoanScreen> {
                 loading: () => const SizedBox.shrink(),
                 error: (_, __) => const SizedBox.shrink(),
                 data: (groups) {
-                  if (groups.isEmpty) return const SizedBox.shrink();
+                  if (groups.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        'You need to be a member of a group to request a loan.',
+                        style: const TextStyle(
+                          color: AppColors.error,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: DropdownButtonFormField<String?>(
+                    child: DropdownButtonFormField<String>(
                       value: _groupId,
                       decoration: const InputDecoration(
                         labelText: 'Borrowing From (Group)',
                       ),
-                      items: [
-                        const DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text('General (no group)'),
-                        ),
-                        ...groups.map(
-                          (g) => DropdownMenuItem<String?>(
-                            value: g.id,
-                            child: Text(g.name),
-                          ),
-                        ),
-                      ],
+                      items: groups
+                          .map(
+                            (g) => DropdownMenuItem<String>(
+                              value: g.id,
+                              child: Text(g.name),
+                            ),
+                          )
+                          .toList(),
+                      validator: (v) =>
+                          v == null ? 'Please select a group to request a loan from.' : null,
                       onChanged: (v) => setState(() => _groupId = v),
                     ),
                   );

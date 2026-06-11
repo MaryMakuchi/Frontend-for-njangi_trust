@@ -33,6 +33,7 @@ class LoansScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final loansAsync = ref.watch(loansProvider);
     final maxAmountAsync = ref.watch(maxLoanAmountProvider);
+    final pendingVotesAsync = ref.watch(pendingLoanVotesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -50,6 +51,7 @@ class LoansScreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(loansProvider);
             ref.invalidate(maxLoanAmountProvider);
+            ref.invalidate(pendingLoanVotesProvider);
           },
           child: ListView(
             padding: const EdgeInsets.all(20),
@@ -109,6 +111,25 @@ class LoansScreen extends ConsumerWidget {
                 onPressed: () => context.push('${AppRoutes.loans}/request'),
               ),
               const SizedBox(height: 24),
+              pendingVotesAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (votes) {
+                  if (votes.isEmpty) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Loan Requests Awaiting Your Vote',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 12),
+                      ...votes.map((vote) => _PendingVoteCard(vote: vote)),
+                      const SizedBox(height: 12),
+                    ],
+                  );
+                },
+              ),
               Text('Active Loans', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
               ...loans.map((loan) => _LoanCard(
@@ -131,6 +152,17 @@ class _LoanCard extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<_LoanCard> createState() => _LoanCardState();
+}
+
+String _statusLabel(LoanStatus status) {
+  switch (status) {
+    case LoanStatus.pending:
+      return 'PENDING APPROVAL';
+    case LoanStatus.rejected:
+      return 'REJECTED';
+    default:
+      return status.name.toUpperCase();
+  }
 }
 
 class _LoanCardState extends ConsumerState<_LoanCard> {
@@ -238,13 +270,22 @@ class _LoanCardState extends ConsumerState<_LoanCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(loan.purpose, style: Theme.of(context).textTheme.titleSmall),
-              Text(
-                loan.status.name.toUpperCase(),
-                style: TextStyle(
-                  color: statusColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: Text(loan.purpose, style: Theme.of(context).textTheme.titleSmall),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _statusLabel(loan.status),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -256,6 +297,26 @@ class _LoanCardState extends ConsumerState<_LoanCard> {
           ),
           if (loan.groupName != null)
             Text(loan.groupName!, style: Theme.of(context).textTheme.bodySmall),
+          if (loan.status == LoanStatus.pending) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Pending approval from your group',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
+          if (loan.status == LoanStatus.rejected) ...[
+            const SizedBox(height: 12),
+            Text(
+              'This loan request was rejected by your group',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
           if (loan.status == LoanStatus.active) ...[
             const SizedBox(height: 12),
             ClipRRect(
@@ -289,6 +350,131 @@ class _LoanCardState extends ConsumerState<_LoanCard> {
               onPressed: () => _showRepayDialog(context),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingVoteCard extends ConsumerStatefulWidget {
+  const _PendingVoteCard({required this.vote});
+
+  final PendingLoanVoteEntity vote;
+
+  @override
+  ConsumerState<_PendingVoteCard> createState() => _PendingVoteCardState();
+}
+
+class _PendingVoteCardState extends ConsumerState<_PendingVoteCard> {
+  bool _isLoading = false;
+
+  Future<void> _vote(LoanVoteDecision decision) async {
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(loanRepositoryProvider).voteOnLoan(
+            loanId: widget.vote.loanId,
+            decision: decision,
+          );
+      ref.invalidate(pendingLoanVotesProvider);
+      ref.invalidate(loansProvider);
+    } catch (e) {
+      if (mounted) {
+        final message = e is ApiException ? e.message : AppStrings.genericError;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vote = widget.vote;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  '${vote.requesterName} requested a loan',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              BalanceText(vote.amount, style: Theme.of(context).textTheme.titleSmall),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${vote.groupName} • ${vote.purpose} • ${vote.durationMonths} months',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${vote.approveCount} approve / ${vote.rejectCount} reject, '
+            'needs ${vote.majorityThreshold} of ${vote.eligibleVoters}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 12),
+          if (vote.yourVote != null)
+            Row(
+              children: [
+                Icon(
+                  vote.yourVote == LoanVoteDecision.approve
+                      ? Icons.thumb_up
+                      : Icons.thumb_down,
+                  size: 16,
+                  color: vote.yourVote == LoanVoteDecision.approve
+                      ? AppColors.success
+                      : AppColors.error,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'You voted to ${vote.yourVote == LoanVoteDecision.approve ? 'approve' : 'reject'}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: vote.yourVote == LoanVoteDecision.approve
+                        ? AppColors.success
+                        : AppColors.error,
+                  ),
+                ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    label: 'Approve',
+                    isLoading: _isLoading,
+                    onPressed: () => _vote(LoanVoteDecision.approve),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: CustomButton(
+                    label: 'Reject',
+                    isOutlined: true,
+                    isLoading: _isLoading,
+                    onPressed: () => _vote(LoanVoteDecision.reject),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );

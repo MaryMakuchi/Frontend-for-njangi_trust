@@ -176,6 +176,10 @@ final maxLoanAmountProvider = FutureProvider<double>((ref) {
   return ref.watch(loanRepositoryProvider).getMaxEligibleAmount();
 });
 
+final pendingLoanVotesProvider = FutureProvider<List<PendingLoanVoteEntity>>((ref) {
+  return ref.watch(loanRepositoryProvider).getPendingVotes();
+});
+
 final transactionsProvider = FutureProvider<List<TransactionEntity>>((ref) {
   return ref.watch(transactionRepositoryProvider).getTransactions(status: 'verified');
 });
