@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../providers/providers.dart';
@@ -46,18 +47,24 @@ class BlockchainLedgerScreen extends ConsumerWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.successLight,
+                          color: t.onChain
+                              ? AppColors.successLight
+                              : AppColors.mediumGray.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.verified, size: 14, color: AppColors.success),
-                            SizedBox(width: 4),
+                            Icon(
+                              t.onChain ? Icons.verified : Icons.hourglass_top,
+                              size: 14,
+                              color: t.onChain ? AppColors.success : AppColors.mediumGray,
+                            ),
+                            const SizedBox(width: 4),
                             Text(
-                              'Verified',
+                              t.onChain ? 'On-chain' : 'Recorded',
                               style: TextStyle(
-                                color: AppColors.success,
+                                color: t.onChain ? AppColors.success : AppColors.mediumGray,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -81,21 +88,34 @@ class BlockchainLedgerScreen extends ConsumerWidget {
                   ),
                   if (t.hash != null && t.hash!.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.link, size: 14, color: AppColors.purple),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            t.hash!,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  fontFamily: 'monospace',
-                                  color: AppColors.purple,
-                                ),
-                            overflow: TextOverflow.ellipsis,
+                    GestureDetector(
+                      onTap: t.explorerUrl != null
+                          ? () => launchUrl(
+                                Uri.parse(t.explorerUrl!),
+                                mode: LaunchMode.externalApplication,
+                              )
+                          : null,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.link, size: 14, color: AppColors.purple),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              t.hash!,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontFamily: 'monospace',
+                                    color: AppColors.purple,
+                                    decoration: t.explorerUrl != null
+                                        ? TextDecoration.underline
+                                        : null,
+                                  ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
+                          if (t.explorerUrl != null)
+                            const Icon(Icons.open_in_new, size: 14, color: AppColors.purple),
+                        ],
+                      ),
                     ),
                   ],
                 ],

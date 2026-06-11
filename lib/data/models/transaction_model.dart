@@ -13,6 +13,8 @@ class TransactionModel {
       groupName: json['group_name'] as String?,
       hash: json['hash'] as String?,
       isCredit: json['is_credit'] as bool? ?? false,
+      onChain: json['on_chain'] as bool? ?? false,
+      explorerUrl: json['explorer_url'] as String?,
     );
   }
 
