@@ -12,6 +12,7 @@ import '../../data/repositories/wallet_repository_impl.dart';
 import '../../domain/entities/contribution_entity.dart';
 import '../../domain/entities/dashboard_entity.dart';
 import '../../domain/entities/group_entity.dart';
+import '../../domain/entities/group_message_entity.dart';
 import '../../domain/entities/linked_account_entity.dart';
 import '../../domain/entities/loan_entity.dart';
 import '../../domain/entities/notification_entity.dart';
@@ -192,6 +193,11 @@ final linkedAccountsProvider = FutureProvider<List<LinkedAccountEntity>>((ref) {
 final groupSocialFundsProvider =
     FutureProvider.family<List<SocialFundEntity>, String>((ref, groupId) {
   return ref.watch(groupRepositoryProvider).getSocialFunds(groupId);
+});
+
+final groupMessagesProvider =
+    FutureProvider.family<List<GroupMessageEntity>, String>((ref, groupId) {
+  return ref.watch(groupRepositoryProvider).getGroupMessages(groupId);
 });
 
 // Onboarding flag

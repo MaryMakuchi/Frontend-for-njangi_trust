@@ -1,4 +1,5 @@
 import '../entities/group_entity.dart';
+import '../entities/group_message_entity.dart';
 import '../entities/social_fund_entity.dart';
 
 abstract class GroupRepository {
@@ -33,5 +34,10 @@ abstract class GroupRepository {
     required String groupId,
     required String fundId,
     required double amount,
+  });
+  Future<List<GroupMessageEntity>> getGroupMessages(String groupId);
+  Future<GroupMessageEntity> sendGroupMessage({
+    required String groupId,
+    required String message,
   });
 }

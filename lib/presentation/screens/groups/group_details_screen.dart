@@ -54,7 +54,7 @@ class GroupDetailsScreen extends ConsumerWidget {
                       _SocialFundTab(group: group),
                       const Center(child: Text('Ledger coming soon')),
                       const Center(child: Text('Group loans coming soon')),
-                      const Center(child: Text('Group chat coming soon')),
+                      _ChatTab(group: group),
                     ],
                   ),
                 ),
@@ -791,6 +791,140 @@ class _SocialFundCardState extends ConsumerState<_SocialFundCard> {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _ChatTab extends ConsumerStatefulWidget {
+  const _ChatTab({required this.group});
+
+  final GroupEntity group;
+
+  @override
+  ConsumerState<_ChatTab> createState() => _ChatTabState();
+}
+
+class _ChatTabState extends ConsumerState<_ChatTab> {
+  final _controller = TextEditingController();
+  bool _isSending = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _isSending = true);
+    try {
+      await ref.read(groupRepositoryProvider).sendGroupMessage(
+            groupId: widget.group.id,
+            message: text,
+          );
+      _controller.clear();
+      ref.invalidate(groupMessagesProvider(widget.group.id));
+    } catch (e) {
+      if (mounted) {
+        final message = e is ApiException ? e.message : AppStrings.genericError;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messagesAsync = ref.watch(groupMessagesProvider(widget.group.id));
+    final currentUser = ref.watch(authStateProvider).valueOrNull;
+
+    return Column(
+      children: [
+        Expanded(
+          child: messagesAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (messages) {
+              if (messages.isEmpty) {
+                return const Center(child: Text('No messages yet. Say hello!'));
+              }
+              return RefreshIndicator(
+                onRefresh: () async => ref.invalidate(groupMessagesProvider(widget.group.id)),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = messages[index];
+                    final isMe = msg.userId == currentUser?.id;
+                    return Align(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        constraints: const BoxConstraints(maxWidth: 280),
+                        decoration: BoxDecoration(
+                          color: isMe
+                              ? AppColors.primary.withValues(alpha: 0.12)
+                              : AppColors.purpleSurface,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (!isMe)
+                              Text(
+                                msg.userName,
+                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.purple,
+                                    ),
+                              ),
+                            Text(msg.message, style: Theme.of(context).textTheme.bodyMedium),
+                            const SizedBox(height: 4),
+                            Text(
+                              Formatters.dateTime(msg.createdAt),
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: CustomTextField(
+                    label: 'Message',
+                    controller: _controller,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filled(
+                  onPressed: _isSending ? null : _send,
+                  icon: _isSending
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                        )
+                      : const Icon(Icons.send),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

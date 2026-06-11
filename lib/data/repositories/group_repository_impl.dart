@@ -2,9 +2,11 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/utils/api_helper.dart';
 import '../../domain/entities/group_entity.dart';
+import '../../domain/entities/group_message_entity.dart';
 import '../../domain/entities/social_fund_entity.dart';
 import '../../domain/repositories/group_repository.dart';
 import '../datasources/mock_data.dart';
+import '../models/group_message_model.dart';
 import '../models/group_model.dart';
 import '../models/social_fund_model.dart';
 
@@ -194,5 +196,38 @@ class GroupRepositoryImpl implements GroupRepository {
       body: {'amount': amount},
     );
     return SocialFundModel.fromJson(parseJsonResponse(response));
+  }
+
+  @override
+  Future<List<GroupMessageEntity>> getGroupMessages(String groupId) async {
+    if (AppConstants.useMockData) return [];
+
+    final response = await _api.get('/groups/$groupId/messages/');
+    return parseListResponse(response)
+        .map((e) => GroupMessageModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<GroupMessageEntity> sendGroupMessage({
+    required String groupId,
+    required String message,
+  }) async {
+    if (AppConstants.useMockData) {
+      return GroupMessageEntity(
+        id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+        groupId: groupId,
+        userId: 'me',
+        userName: 'Me',
+        message: message,
+        createdAt: DateTime.now(),
+      );
+    }
+
+    final response = await _api.post(
+      '/groups/$groupId/messages/',
+      body: {'message': message},
+    );
+    return GroupMessageModel.fromJson(parseJsonResponse(response));
   }
 }
