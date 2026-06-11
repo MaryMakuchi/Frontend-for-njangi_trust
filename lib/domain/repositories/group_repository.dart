@@ -22,6 +22,10 @@ abstract class GroupRepository {
     required String mode,
     List<String>? order,
   });
+  Future<GroupEntity> updateGroupSettings({
+    required String groupId,
+    int? maxMembers,
+  });
   Future<PlayNjangiResultEntity> playNjangi(String groupId);
   Future<List<SocialFundEntity>> getSocialFunds(String groupId);
   Future<SocialFundEntity> createSocialFund({

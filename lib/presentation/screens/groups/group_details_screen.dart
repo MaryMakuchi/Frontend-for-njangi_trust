@@ -374,11 +374,20 @@ class _OverviewTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isPresident = _myRole(ref) == GroupRole.president;
-    final isFull = group.memberCount >= group.maxMembers;
+    final canAssignPicking = group.memberCount >= 2;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (isPresident)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => _showEditGroupSettingsDialog(context, ref, group),
+              icon: const Icon(Icons.settings),
+              label: const Text('Edit group settings'),
+            ),
+          ),
         _InfoRow(
           'Contribution',
           Formatters.currency(group.contributionAmount),
@@ -406,18 +415,25 @@ class _OverviewTab extends ConsumerWidget {
         ],
         if (isPresident) ...[
           const SizedBox(height: 24),
-          Text('Picking Order', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            group.scheduleGenerated ? 'Re-assign Picking Order' : 'Picking Order',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           const SizedBox(height: 8),
           if (group.scheduleGenerated)
             Container(
+              margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.successLight,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text('The picking order has been assigned.'),
-            )
-          else if (!isFull)
+              child: const Text(
+                'A picking order has already been assigned. You can re-run picking '
+                'below — this will overwrite the current order.',
+              ),
+            ),
+          if (!canAssignPicking)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -425,13 +441,98 @@ class _OverviewTab extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(
-                'The picking order can be assigned once the group is full.',
+                'At least two members are needed to assign the picking order.',
               ),
             )
           else
             _PickingOrderActions(group: group),
         ],
       ],
+    );
+  }
+
+  void _showEditGroupSettingsDialog(
+    BuildContext context,
+    WidgetRef ref,
+    GroupEntity group,
+  ) {
+    final controller = TextEditingController(text: '${group.maxMembers}');
+    bool isLoading = false;
+    String? errorText;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: const Text('Edit Group Settings'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomTextField(
+                label: 'Maximum Members',
+                controller: controller,
+                keyboardType: TextInputType.number,
+              ),
+              if (errorText != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  errorText!,
+                  style: const TextStyle(color: AppColors.error, fontSize: 12),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      final value = int.tryParse(controller.text.trim());
+                      if (value == null || value < 1) {
+                        setState(() => errorText = 'Enter a valid number.');
+                        return;
+                      }
+                      if (value < group.memberCount) {
+                        setState(() => errorText =
+                            'Maximum members cannot be less than the current '
+                            'member count (${group.memberCount}).');
+                        return;
+                      }
+                      setState(() {
+                        isLoading = true;
+                        errorText = null;
+                      });
+                      try {
+                        await ref.read(groupRepositoryProvider).updateGroupSettings(
+                              groupId: group.id,
+                              maxMembers: value,
+                            );
+                        ref.invalidate(groupsProvider);
+                        if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                      } catch (e) {
+                        final message =
+                            e is ApiException ? e.message : AppStrings.genericError;
+                        setState(() {
+                          isLoading = false;
+                          errorText = message;
+                        });
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Save'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -448,25 +549,62 @@ class _PickingOrderActions extends ConsumerStatefulWidget {
 class _PickingOrderActionsState extends ConsumerState<_PickingOrderActions> {
   bool _isLoading = false;
   late List<GroupMemberEntity> _order;
+  // 'random' or 'manual' — drives whether re-shuffle is offered.
+  String _mode = 'manual';
+  bool _hasDraft = false;
 
   @override
   void initState() {
     super.initState();
-    _order = List.of(widget.group.members);
+    _order = _initialOrder();
   }
 
-  Future<void> _assign(String mode, [List<String>? order]) async {
+  List<GroupMemberEntity> _initialOrder() {
+    final members = List.of(widget.group.members);
+    // Pre-populate with the existing rotation order where available, then
+    // append any members who don't have a position yet.
+    final positioned = members.where((m) => m.rotationPosition != null).toList()
+      ..sort((a, b) => a.rotationPosition!.compareTo(b.rotationPosition!));
+    final unpositioned = members.where((m) => m.rotationPosition == null).toList();
+    return [...positioned, ...unpositioned];
+  }
+
+  void _shuffle() {
+    setState(() {
+      _order = List.of(widget.group.members)..shuffle();
+      _mode = 'random';
+      _hasDraft = true;
+    });
+  }
+
+  void _startManual() {
+    setState(() {
+      _order = _initialOrder();
+      _mode = 'manual';
+      _hasDraft = true;
+    });
+  }
+
+  void _cancelDraft() {
+    setState(() {
+      _order = _initialOrder();
+      _hasDraft = false;
+    });
+  }
+
+  Future<void> _save() async {
     setState(() => _isLoading = true);
     try {
       await ref.read(groupRepositoryProvider).assignPickingOrder(
             groupId: widget.group.id,
-            mode: mode,
-            order: order,
+            mode: _mode,
+            order: _order.map((m) => m.id).toList(),
           );
       ref.invalidate(groupsProvider);
       if (mounted) {
+        setState(() => _hasDraft = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Picking order assigned!')),
+          const SnackBar(content: Text('Picking order saved!')),
         );
       }
     } catch (e) {
@@ -484,50 +622,89 @@ class _PickingOrderActionsState extends ConsumerState<_PickingOrderActions> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        CustomButton(
-          label: 'Randomly Assign Picking Order',
-          icon: Icons.shuffle,
-          isLoading: _isLoading,
-          onPressed: () => _assign('random'),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Manual Order',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Drag members to set the picking order, then confirm below.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        const SizedBox(height: 8),
-        ReorderableListView(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          onReorder: (oldIndex, newIndex) {
-            setState(() {
-              if (newIndex > oldIndex) newIndex -= 1;
-              final item = _order.removeAt(oldIndex);
-              _order.insert(newIndex, item);
-            });
-          },
-          children: [
-            for (var i = 0; i < _order.length; i++)
-              ListTile(
-                key: ValueKey(_order[i].id),
-                leading: CircleAvatar(child: Text('${i + 1}')),
-                title: Text(_order[i].name),
-                trailing: const Icon(Icons.drag_handle),
+        if (!_hasDraft) ...[
+          CustomButton(
+            label: 'Pick Randomly',
+            icon: Icons.shuffle,
+            isLoading: _isLoading,
+            onPressed: _shuffle,
+          ),
+          const SizedBox(height: 12),
+          CustomButton(
+            label: 'Arrange Manually',
+            icon: Icons.reorder,
+            isOutlined: true,
+            isLoading: _isLoading,
+            onPressed: _startManual,
+          ),
+        ] else ...[
+          Text(
+            _mode == 'random' ? 'Random Draft Order' : 'Manual Draft Order',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _mode == 'random'
+                ? 'Review the shuffled order below. Re-shuffle for a new draft, '
+                    'or save to apply it.'
+                : 'Drag members to set the picking order, then save to apply it.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          ReorderableListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            onReorder: (oldIndex, newIndex) {
+              setState(() {
+                if (newIndex > oldIndex) newIndex -= 1;
+                final item = _order.removeAt(oldIndex);
+                _order.insert(newIndex, item);
+                _mode = 'manual';
+              });
+            },
+            children: [
+              for (var i = 0; i < _order.length; i++)
+                ListTile(
+                  key: ValueKey(_order[i].id),
+                  leading: CircleAvatar(child: Text('${i + 1}')),
+                  title: Text(_order[i].name),
+                  trailing: const Icon(Icons.drag_handle),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (_mode == 'random')
+                Expanded(
+                  child: CustomButton(
+                    label: 'Re-shuffle',
+                    icon: Icons.shuffle,
+                    isOutlined: true,
+                    isLoading: _isLoading,
+                    onPressed: _shuffle,
+                  ),
+                ),
+              if (_mode == 'random') const SizedBox(width: 8),
+              Expanded(
+                child: CustomButton(
+                  label: 'Cancel',
+                  isOutlined: true,
+                  isLoading: _isLoading,
+                  onPressed: _cancelDraft,
+                ),
               ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        CustomButton(
-          label: 'Confirm Manual Order',
-          isOutlined: true,
-          isLoading: _isLoading,
-          onPressed: () => _assign('manual', _order.map((m) => m.id).toList()),
-        ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: CustomButton(
+                  label: 'Save',
+                  isLoading: _isLoading,
+                  onPressed: _save,
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

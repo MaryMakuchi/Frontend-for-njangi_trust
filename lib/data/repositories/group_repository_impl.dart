@@ -127,6 +127,49 @@ class GroupRepositoryImpl implements GroupRepository {
   }
 
   @override
+  Future<GroupEntity> updateGroupSettings({
+    required String groupId,
+    int? maxMembers,
+  }) async {
+    if (AppConstants.useMockData) {
+      final group = MockData.groups.firstWhere((g) => g.id == groupId);
+      if (maxMembers == null) return group;
+      return GroupEntity(
+        id: group.id,
+        name: group.name,
+        memberCount: group.memberCount,
+        maxMembers: maxMembers,
+        contributionAmount: group.contributionAmount,
+        frequency: group.frequency,
+        fundBalance: group.fundBalance,
+        cycleProgress: group.cycleProgress,
+        averageMri: group.averageMri,
+        startDate: group.startDate,
+        endDate: group.endDate,
+        invitationCode: group.invitationCode,
+        rules: group.rules,
+        members: group.members,
+        currentBeneficiaryId: group.currentBeneficiaryId,
+        nextBeneficiaryId: group.nextBeneficiaryId,
+        currentPicker: group.currentPicker,
+        targetAmount: group.targetAmount,
+        durationMonths: group.durationMonths,
+        pickingMode: group.pickingMode,
+        scheduleGenerated: group.scheduleGenerated,
+        pickersPerCycle: group.pickersPerCycle,
+      );
+    }
+
+    final response = await _api.patch(
+      '/groups/$groupId/',
+      body: {
+        if (maxMembers != null) 'max_members': maxMembers,
+      },
+    );
+    return GroupModel.fromJson(parseJsonResponse(response));
+  }
+
+  @override
   Future<PlayNjangiResultEntity> playNjangi(String groupId) async {
     if (AppConstants.useMockData) {
       final group = MockData.groups.firstWhere((g) => g.id == groupId);
