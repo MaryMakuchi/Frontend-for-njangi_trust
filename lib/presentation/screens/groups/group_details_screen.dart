@@ -109,6 +109,28 @@ class _GroupHeader extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.emoji_events_outlined, color: AppColors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    group.currentPicker != null
+                        ? 'Currently picking: ${group.currentPicker!.name}'
+                        : 'Picking order not yet assigned',
+                    style: const TextStyle(color: AppColors.white, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -140,101 +162,160 @@ class _GroupHeader extends StatelessWidget {
   }
 }
 
-class _PlayNjangiSheet extends StatelessWidget {
+class _PlayNjangiSheet extends ConsumerStatefulWidget {
   const _PlayNjangiSheet({required this.group});
 
   final GroupEntity group;
 
   @override
-  Widget build(BuildContext context) {
-    final members = List<GroupMemberEntity>.of(group.members)
-      ..sort((a, b) => (a.rotationPosition ?? 0).compareTo(b.rotationPosition ?? 0));
+  ConsumerState<_PlayNjangiSheet> createState() => _PlayNjangiSheetState();
+}
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
-      expand: false,
-      builder: (context, scrollController) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+class _PlayNjangiSheetState extends ConsumerState<_PlayNjangiSheet> {
+  bool _isLoading = false;
+
+  Future<void> _confirmAndPlay() async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await ref.read(groupRepositoryProvider).playNjangi(widget.group.id);
+      ref.invalidate(groupsProvider);
+      ref.invalidate(dashboardProvider);
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(
+        SnackBar(content: Text('Payment of ${Formatters.currency(result.amount)} successful!')),
+      );
+
+      if (result.cycleCompleted && result.payout != null) {
+        final payout = result.payout!;
+        final pickerName = result.currentPicker?.name;
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Cycle Completed!'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.casino_outlined, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text('Play Njangi', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  '${Formatters.currency(payout.amount)} has been paid out to ${payout.recipientName}.',
+                ),
+                if (pickerName != null) ...[
+                  const SizedBox(height: 8),
+                  Text('The new current picker is $pickerName.'),
+                ],
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              group.name,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 12),
-            if (!group.scheduleGenerated)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.purpleSurface,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'The picking order has not been assigned yet. Once assigned, the rotation will appear here.',
-                ),
-              )
-            else
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.successLight,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Pickers per cycle: ${group.pickersPerCycle} • Duration: ${group.durationMonths} months',
-                ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('OK'),
               ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: ListView.separated(
-                controller: scrollController,
-                itemCount: members.length,
-                separatorBuilder: (_, __) => const Divider(),
-                itemBuilder: (_, i) {
-                  final member = members[i];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: member.isCurrentBeneficiary
-                          ? AppColors.accent.withValues(alpha: 0.2)
-                          : AppColors.primary.withValues(alpha: 0.1),
-                      child: Text('${member.rotationPosition ?? '-'}'),
-                    ),
-                    title: Text(member.name),
-                    subtitle: Text(
-                      member.pickCycle != null
-                          ? 'Picks in cycle ${member.pickCycle}'
-                          : 'Pick cycle not assigned',
-                    ),
-                    trailing: member.isCurrentBeneficiary
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              'Current Pick',
-                              style: TextStyle(fontSize: 11, color: AppColors.accent),
-                            ),
-                          )
-                        : null,
-                  );
-                },
-              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final message = e is ApiException ? e.message : AppStrings.genericError;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final group = widget.group;
+    final currentPicker = group.currentPicker;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.casino_outlined, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text('Play Njangi', style: Theme.of(context).textTheme.titleLarge),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            group.name,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.purpleSurface,
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
-        ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Amount to pay',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  Formatters.currency(group.contributionAmount),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'This is your fixed group contribution and cannot be changed.',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.successLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.emoji_events_outlined, color: AppColors.accent, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    currentPicker != null
+                        ? 'Currently picking: ${currentPicker.name}'
+                        : 'Picking order not yet assigned',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          CustomButton(
+            label: 'Confirm & Play',
+            icon: Icons.check_circle_outline,
+            isLoading: _isLoading,
+            onPressed: _confirmAndPlay,
+          ),
+        ],
       ),
     );
   }

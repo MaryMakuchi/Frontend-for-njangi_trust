@@ -127,6 +127,23 @@ class GroupRepositoryImpl implements GroupRepository {
   }
 
   @override
+  Future<PlayNjangiResultEntity> playNjangi(String groupId) async {
+    if (AppConstants.useMockData) {
+      final group = MockData.groups.firstWhere((g) => g.id == groupId);
+      return PlayNjangiResultEntity(
+        amount: group.contributionAmount,
+        groupFundBalance: group.fundBalance + group.contributionAmount,
+        cycleProgress: group.cycleProgress + 1,
+        maxMembers: group.maxMembers,
+        currentPicker: group.currentPicker,
+      );
+    }
+
+    final response = await _api.post('/groups/$groupId/play/', body: const {});
+    return PlayNjangiResultModel.fromJson(parseJsonResponse(response));
+  }
+
+  @override
   Future<List<SocialFundEntity>> getSocialFunds(String groupId) async {
     if (AppConstants.useMockData) return [];
 

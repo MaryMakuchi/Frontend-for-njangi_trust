@@ -22,6 +22,7 @@ abstract class GroupRepository {
     required String mode,
     List<String>? order,
   });
+  Future<PlayNjangiResultEntity> playNjangi(String groupId);
   Future<List<SocialFundEntity>> getSocialFunds(String groupId);
   Future<SocialFundEntity> createSocialFund({
     required String groupId,

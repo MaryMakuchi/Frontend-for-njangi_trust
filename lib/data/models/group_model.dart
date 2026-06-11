@@ -26,6 +26,51 @@ class GroupModel {
       scheduleGenerated: json['schedule_generated'] as bool? ?? false,
       pickersPerCycle: json['pickers_per_cycle'] != null ? parseInt(json['pickers_per_cycle']) : 1,
       endDate: parseDateTime(json['end_date']),
+      currentPicker: json['current_picker'] != null
+          ? CurrentPickerModel.fromJson(json['current_picker'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+}
+
+class PlayNjangiResultModel {
+  static PlayNjangiResultEntity fromJson(Map<String, dynamic> json) {
+    return PlayNjangiResultEntity(
+      amount: parseDouble(json['amount']),
+      groupFundBalance: parseDouble(json['group_fund_balance']),
+      cycleProgress: parseInt(json['cycle_progress']),
+      maxMembers: parseInt(json['max_members']),
+      currentPicker: json['current_picker'] != null
+          ? CurrentPickerModel.fromJson(json['current_picker'] as Map<String, dynamic>)
+          : null,
+      cycleCompleted: json['cycle_completed'] as bool? ?? false,
+      payout: json['payout'] != null
+          ? PlayNjangiPayoutModel.fromJson(json['payout'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+}
+
+class PlayNjangiPayoutModel {
+  static PlayNjangiPayoutEntity fromJson(Map<String, dynamic> json) {
+    final recipient = json['recipient'] as Map<String, dynamic>?;
+    return PlayNjangiPayoutEntity(
+      amount: parseDouble(json['amount']),
+      recipientId: recipient?['id']?.toString() ?? '',
+      recipientName: recipient?['name'] as String? ?? '',
+      transactionHash: json['transaction_hash'] as String?,
+    );
+  }
+}
+
+class CurrentPickerModel {
+  static CurrentPickerEntity fromJson(Map<String, dynamic> json) {
+    return CurrentPickerEntity(
+      id: json['id'].toString(),
+      name: json['name'] as String,
+      rotationPosition: json['rotation_position'] != null
+          ? parseInt(json['rotation_position'])
+          : null,
     );
   }
 }

@@ -33,6 +33,69 @@ class GroupMemberEntity extends Equatable {
       ];
 }
 
+class CurrentPickerEntity extends Equatable {
+  const CurrentPickerEntity({
+    required this.id,
+    required this.name,
+    this.rotationPosition,
+  });
+
+  final String id;
+  final String name;
+  final int? rotationPosition;
+
+  @override
+  List<Object?> get props => [id, name, rotationPosition];
+}
+
+class PlayNjangiPayoutEntity extends Equatable {
+  const PlayNjangiPayoutEntity({
+    required this.amount,
+    required this.recipientId,
+    required this.recipientName,
+    this.transactionHash,
+  });
+
+  final double amount;
+  final String recipientId;
+  final String recipientName;
+  final String? transactionHash;
+
+  @override
+  List<Object?> get props => [amount, recipientId, recipientName, transactionHash];
+}
+
+class PlayNjangiResultEntity extends Equatable {
+  const PlayNjangiResultEntity({
+    required this.amount,
+    required this.groupFundBalance,
+    required this.cycleProgress,
+    required this.maxMembers,
+    this.currentPicker,
+    this.cycleCompleted = false,
+    this.payout,
+  });
+
+  final double amount;
+  final double groupFundBalance;
+  final int cycleProgress;
+  final int maxMembers;
+  final CurrentPickerEntity? currentPicker;
+  final bool cycleCompleted;
+  final PlayNjangiPayoutEntity? payout;
+
+  @override
+  List<Object?> get props => [
+        amount,
+        groupFundBalance,
+        cycleProgress,
+        maxMembers,
+        currentPicker,
+        cycleCompleted,
+        payout,
+      ];
+}
+
 class GroupEntity extends Equatable {
   const GroupEntity({
     required this.id,
@@ -56,6 +119,7 @@ class GroupEntity extends Equatable {
     this.scheduleGenerated = false,
     this.pickersPerCycle = 1,
     this.endDate,
+    this.currentPicker,
   });
 
   final String id;
@@ -79,6 +143,7 @@ class GroupEntity extends Equatable {
   final bool scheduleGenerated;
   final int pickersPerCycle;
   final DateTime? endDate;
+  final CurrentPickerEntity? currentPicker;
 
   DateTime get effectiveEndDate =>
       endDate ?? DateTime(startDate.year, startDate.month + durationMonths, startDate.day);
@@ -106,5 +171,6 @@ class GroupEntity extends Equatable {
         scheduleGenerated,
         pickersPerCycle,
         endDate,
+        currentPicker,
       ];
 }
