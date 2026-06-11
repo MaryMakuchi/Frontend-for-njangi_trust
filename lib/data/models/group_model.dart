@@ -20,6 +20,12 @@ class GroupModel {
       members: membersJson.map((m) => GroupMemberModel.fromJson(m as Map<String, dynamic>)).toList(),
       currentBeneficiaryId: json['current_beneficiary_id']?.toString(),
       nextBeneficiaryId: json['next_beneficiary_id']?.toString(),
+      targetAmount: json['target_amount'] != null ? parseDouble(json['target_amount']) : null,
+      durationMonths: json['duration_months'] != null ? parseInt(json['duration_months']) : 12,
+      pickingMode: json['picking_mode'] as String? ?? 'random',
+      scheduleGenerated: json['schedule_generated'] as bool? ?? false,
+      pickersPerCycle: json['pickers_per_cycle'] != null ? parseInt(json['pickers_per_cycle']) : 1,
+      endDate: parseDateTime(json['end_date']),
     );
   }
 }
@@ -35,6 +41,7 @@ class GroupMemberModel {
       rotationPosition: json['rotation_position'] != null
           ? parseInt(json['rotation_position'])
           : null,
+      pickCycle: json['pick_cycle'] != null ? parseInt(json['pick_cycle']) : null,
     );
   }
 

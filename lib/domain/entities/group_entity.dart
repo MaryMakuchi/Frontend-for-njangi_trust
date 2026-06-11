@@ -10,6 +10,7 @@ class GroupMemberEntity extends Equatable {
     required this.mriScore,
     this.isCurrentBeneficiary = false,
     this.rotationPosition,
+    this.pickCycle,
   });
 
   final String id;
@@ -18,10 +19,18 @@ class GroupMemberEntity extends Equatable {
   final double mriScore;
   final bool isCurrentBeneficiary;
   final int? rotationPosition;
+  final int? pickCycle;
 
   @override
-  List<Object?> get props =>
-      [id, name, role, mriScore, isCurrentBeneficiary, rotationPosition];
+  List<Object?> get props => [
+        id,
+        name,
+        role,
+        mriScore,
+        isCurrentBeneficiary,
+        rotationPosition,
+        pickCycle,
+      ];
 }
 
 class GroupEntity extends Equatable {
@@ -41,6 +50,12 @@ class GroupEntity extends Equatable {
     this.members = const [],
     this.currentBeneficiaryId,
     this.nextBeneficiaryId,
+    this.targetAmount,
+    this.durationMonths = 12,
+    this.pickingMode = 'random',
+    this.scheduleGenerated = false,
+    this.pickersPerCycle = 1,
+    this.endDate,
   });
 
   final String id;
@@ -58,6 +73,15 @@ class GroupEntity extends Equatable {
   final List<GroupMemberEntity> members;
   final String? currentBeneficiaryId;
   final String? nextBeneficiaryId;
+  final double? targetAmount;
+  final int durationMonths;
+  final String pickingMode;
+  final bool scheduleGenerated;
+  final int pickersPerCycle;
+  final DateTime? endDate;
+
+  DateTime get effectiveEndDate =>
+      endDate ?? DateTime(startDate.year, startDate.month + durationMonths, startDate.day);
 
   @override
   List<Object?> get props => [
@@ -76,5 +100,11 @@ class GroupEntity extends Equatable {
         members,
         currentBeneficiaryId,
         nextBeneficiaryId,
+        targetAmount,
+        durationMonths,
+        pickingMode,
+        scheduleGenerated,
+        pickersPerCycle,
+        endDate,
       ];
 }

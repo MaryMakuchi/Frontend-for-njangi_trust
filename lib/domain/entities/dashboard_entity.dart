@@ -49,6 +49,9 @@ class DashboardEntity extends Equatable {
     required this.mriTrend,
     required this.recentActivity,
     this.mriBreakdown,
+    this.walletBalance = 0,
+    this.savingsBalance = 0,
+    this.totalBalance = 0,
   });
 
   final double njangiBalance;
@@ -64,6 +67,9 @@ class DashboardEntity extends Equatable {
   final double mriTrend;
   final List<TransactionEntity> recentActivity;
   final MriBreakdownEntity? mriBreakdown;
+  final double walletBalance;
+  final double savingsBalance;
+  final double totalBalance;
 
   @override
   List<Object?> get props => [
@@ -80,5 +86,8 @@ class DashboardEntity extends Equatable {
         mriTrend,
         recentActivity,
         mriBreakdown,
+        walletBalance,
+        savingsBalance,
+        totalBalance,
       ];
 }

@@ -15,6 +15,10 @@ abstract class AuthRepository {
   Future<void> verifyPhone({required String phone, required String otp});
   Future<void> verifyEmail({required String email, required String otp});
   Future<void> forgotPassword({required String email});
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
   Future<void> logout();
   Future<UserEntity?> getCurrentUser();
   Future<bool> isAuthenticated();

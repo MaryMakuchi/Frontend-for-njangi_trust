@@ -28,6 +28,14 @@ class TransactionModel {
         return TransactionType.loanRepayment;
       case 'social_fund':
         return TransactionType.socialFund;
+      case 'wallet_topup':
+        return TransactionType.walletTopup;
+      case 'wallet_withdrawal':
+        return TransactionType.walletWithdrawal;
+      case 'savings_deposit':
+        return TransactionType.savingsDeposit;
+      case 'savings_withdrawal':
+        return TransactionType.savingsWithdrawal;
       default:
         return TransactionType.contribution;
     }

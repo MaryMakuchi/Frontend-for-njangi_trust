@@ -20,6 +20,8 @@ class MockData {
     yearsActive: 2,
     globalRank: 12,
     badge: 'Trusted Member',
+    walletBalance: 75000,
+    savingsBalance: 2450000,
   );
 
   static final DashboardEntity dashboard = DashboardEntity(
@@ -42,6 +44,9 @@ class MockData {
       communityParticipation: 8.9,
     ),
     recentActivity: transactions.take(5).toList(),
+    walletBalance: 75000,
+    savingsBalance: 2450000,
+    totalBalance: 2525000,
   );
 
   static final List<GroupEntity> groups = [
@@ -61,6 +66,11 @@ class MockData {
       currentBeneficiaryId: 'mem_003',
       nextBeneficiaryId: 'mem_004',
       members: _houseAMembers,
+      targetAmount: 1000000,
+      durationMonths: 20,
+      pickingMode: 'random',
+      scheduleGenerated: true,
+      pickersPerCycle: 1,
     ),
     GroupEntity(
       id: 'grp_002',

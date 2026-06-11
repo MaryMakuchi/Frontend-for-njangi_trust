@@ -1,4 +1,5 @@
 import '../entities/group_entity.dart';
+import '../entities/social_fund_entity.dart';
 
 abstract class GroupRepository {
   Future<List<GroupEntity>> getGroups();
@@ -10,6 +11,27 @@ abstract class GroupRepository {
     required int maxMembers,
     required DateTime startDate,
     String? rules,
+    double? targetAmount,
+    int durationMonths = 12,
+    String pickingMode = 'random',
   });
   Future<GroupEntity> joinGroup({String? invitationCode, String? groupId});
+  Future<GroupEntity> assignPickingOrder({
+    required String groupId,
+    required String mode,
+    List<String>? order,
+  });
+  Future<List<SocialFundEntity>> getSocialFunds(String groupId);
+  Future<SocialFundEntity> createSocialFund({
+    required String groupId,
+    required String reason,
+    required DateTime startDate,
+    required DateTime endDate,
+    double? targetAmount,
+  });
+  Future<SocialFundEntity> contributeSocialFund({
+    required String groupId,
+    required String fundId,
+    required double amount,
+  });
 }

@@ -132,6 +132,22 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    if (AppConstants.useMockData) return;
+    final response = await _api.post(
+      '/auth/change-password/',
+      body: {
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      },
+    );
+    parseJsonResponse(response);
+  }
+
+  @override
   Future<void> logout() async {
     if (!AppConstants.useMockData) {
       try {

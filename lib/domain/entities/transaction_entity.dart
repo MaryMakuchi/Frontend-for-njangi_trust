@@ -6,6 +6,10 @@ enum TransactionType {
   loanDisbursement,
   loanRepayment,
   socialFund,
+  walletTopup,
+  walletWithdrawal,
+  savingsDeposit,
+  savingsWithdrawal,
 }
 
 enum TransactionStatus { pending, completed, failed, verified }

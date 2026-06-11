@@ -31,6 +31,9 @@ class DashboardModel {
       recentActivity: activity
           .map((e) => TransactionModel.fromJson(e as Map<String, dynamic>))
           .toList(),
+      walletBalance: parseDouble(json['wallet_balance']),
+      savingsBalance: parseDouble(json['savings_balance']),
+      totalBalance: parseDouble(json['total_balance']),
     );
   }
 }

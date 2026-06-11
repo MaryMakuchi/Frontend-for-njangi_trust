@@ -8,9 +8,11 @@ import '../../data/repositories/group_repository_impl.dart';
 import '../../data/repositories/loan_repository_impl.dart';
 import '../../data/repositories/notification_repository_impl.dart';
 import '../../data/repositories/transaction_repository_impl.dart';
+import '../../data/repositories/wallet_repository_impl.dart';
 import '../../domain/entities/contribution_entity.dart';
 import '../../domain/entities/dashboard_entity.dart';
 import '../../domain/entities/group_entity.dart';
+import '../../domain/entities/linked_account_entity.dart';
 import '../../domain/entities/loan_entity.dart';
 import '../../domain/entities/notification_entity.dart';
 import '../../domain/entities/transaction_entity.dart';
@@ -22,6 +24,7 @@ import '../../domain/repositories/group_repository.dart';
 import '../../domain/repositories/loan_repository.dart';
 import '../../domain/repositories/notification_repository.dart';
 import '../../domain/repositories/transaction_repository.dart';
+import '../../domain/repositories/wallet_repository.dart';
 
 // Services
 final secureStorageProvider = Provider<SecureStorageService>(
@@ -56,6 +59,9 @@ final notificationRepositoryProvider = Provider<NotificationRepository>(
 );
 final transactionRepositoryProvider = Provider<TransactionRepository>(
   (ref) => TransactionRepositoryImpl(api: ref.watch(apiServiceProvider)),
+);
+final walletRepositoryProvider = Provider<WalletRepository>(
+  (ref) => WalletRepositoryImpl(api: ref.watch(apiServiceProvider)),
 );
 
 // Auth state
@@ -132,6 +138,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserEntity?>> {
     await _repository.logout();
     state = const AsyncValue.data(null);
   }
+
+  Future<void> refreshUser() async {
+    try {
+      final user = await _repository.getCurrentUser();
+      state = AsyncValue.data(user);
+    } catch (_) {
+      // Keep existing state if refresh fails.
+    }
+  }
 }
 
 // Data providers
@@ -161,6 +176,16 @@ final maxLoanAmountProvider = FutureProvider<double>((ref) {
 
 final transactionsProvider = FutureProvider<List<TransactionEntity>>((ref) {
   return ref.watch(transactionRepositoryProvider).getTransactions(status: 'verified');
+});
+
+final savingsHistoryProvider = FutureProvider<List<TransactionEntity>>((ref) {
+  return ref.watch(transactionRepositoryProvider).getTransactions(
+        type: 'savings_deposit,savings_withdrawal',
+      );
+});
+
+final linkedAccountsProvider = FutureProvider<List<LinkedAccountEntity>>((ref) {
+  return ref.watch(walletRepositoryProvider).getLinkedAccounts();
 });
 
 // Onboarding flag
