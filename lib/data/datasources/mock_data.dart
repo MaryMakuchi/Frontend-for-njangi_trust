@@ -300,11 +300,11 @@ class MockData {
   ];
 
   static final List<Map<String, dynamic>> savingsChartData = [
-    {'month': 'Jan', 'amount': 1800000.0},
-    {'month': 'Feb', 'amount': 1950000.0},
-    {'month': 'Mar', 'amount': 2100000.0},
-    {'month': 'Apr', 'amount': 2200000.0},
-    {'month': 'May', 'amount': 2350000.0},
-    {'month': 'Jun', 'amount': 2450000.0},
+    {'month': 'Jan', 'balance': 1800000.0, 'deposits': 200000.0, 'withdrawals': 50000.0},
+    {'month': 'Feb', 'balance': 1950000.0, 'deposits': 180000.0, 'withdrawals': 30000.0},
+    {'month': 'Mar', 'balance': 2100000.0, 'deposits': 220000.0, 'withdrawals': 70000.0},
+    {'month': 'Apr', 'balance': 2200000.0, 'deposits': 150000.0, 'withdrawals': 50000.0},
+    {'month': 'May', 'balance': 2350000.0, 'deposits': 240000.0, 'withdrawals': 90000.0},
+    {'month': 'Jun', 'balance': 2450000.0, 'deposits': 190000.0, 'withdrawals': 90000.0},
   ];
 }

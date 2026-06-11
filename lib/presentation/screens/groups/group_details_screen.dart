@@ -107,7 +107,132 @@ class _GroupHeader extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _showPlayNjangiSheet(context, group),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: AppColors.white.withValues(alpha: 0.12),
+                foregroundColor: AppColors.white,
+                side: const BorderSide(color: AppColors.white),
+              ),
+              icon: const Icon(Icons.casino_outlined),
+              label: const Text('Play Njangi'),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  void _showPlayNjangiSheet(BuildContext context, GroupEntity group) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _PlayNjangiSheet(group: group),
+    );
+  }
+}
+
+class _PlayNjangiSheet extends StatelessWidget {
+  const _PlayNjangiSheet({required this.group});
+
+  final GroupEntity group;
+
+  @override
+  Widget build(BuildContext context) {
+    final members = List<GroupMemberEntity>.of(group.members)
+      ..sort((a, b) => (a.rotationPosition ?? 0).compareTo(b.rotationPosition ?? 0));
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.casino_outlined, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Text('Play Njangi', style: Theme.of(context).textTheme.titleLarge),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              group.name,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            if (!group.scheduleGenerated)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.purpleSurface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'The picking order has not been assigned yet. Once assigned, the rotation will appear here.',
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.successLight,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Pickers per cycle: ${group.pickersPerCycle} • Duration: ${group.durationMonths} months',
+                ),
+              ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: ListView.separated(
+                controller: scrollController,
+                itemCount: members.length,
+                separatorBuilder: (_, __) => const Divider(),
+                itemBuilder: (_, i) {
+                  final member = members[i];
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: member.isCurrentBeneficiary
+                          ? AppColors.accent.withValues(alpha: 0.2)
+                          : AppColors.primary.withValues(alpha: 0.1),
+                      child: Text('${member.rotationPosition ?? '-'}'),
+                    ),
+                    title: Text(member.name),
+                    subtitle: Text(
+                      member.pickCycle != null
+                          ? 'Picks in cycle ${member.pickCycle}'
+                          : 'Pick cycle not assigned',
+                    ),
+                    trailing: member.isCurrentBeneficiary
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Current Pick',
+                              style: TextStyle(fontSize: 11, color: AppColors.accent),
+                            ),
+                          )
+                        : null,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

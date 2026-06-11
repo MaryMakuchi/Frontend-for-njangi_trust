@@ -23,6 +23,7 @@ class _RequestLoanScreenState extends ConsumerState<RequestLoanScreen> {
   final _amountController = TextEditingController();
   final _purposeController = TextEditingController();
   int _duration = 3;
+  String? _groupId;
   bool _isLoading = false;
 
   @override
@@ -40,6 +41,7 @@ class _RequestLoanScreenState extends ConsumerState<RequestLoanScreen> {
             amount: double.parse(_amountController.text.replaceAll(',', '')),
             purpose: _purposeController.text.trim(),
             durationMonths: _duration,
+            groupId: _groupId,
           );
       ref.invalidate(loansProvider);
       if (mounted) {
@@ -63,6 +65,7 @@ class _RequestLoanScreenState extends ConsumerState<RequestLoanScreen> {
   @override
   Widget build(BuildContext context) {
     final maxAmountAsync = ref.watch(maxLoanAmountProvider);
+    final groupsAsync = ref.watch(groupsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -138,6 +141,35 @@ class _RequestLoanScreenState extends ConsumerState<RequestLoanScreen> {
                 return const SizedBox.shrink();
               }),
               const SizedBox(height: 16),
+              groupsAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (groups) {
+                  if (groups.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: DropdownButtonFormField<String?>(
+                      value: _groupId,
+                      decoration: const InputDecoration(
+                        labelText: 'Borrowing From (Group)',
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('General (no group)'),
+                        ),
+                        ...groups.map(
+                          (g) => DropdownMenuItem<String?>(
+                            value: g.id,
+                            child: Text(g.name),
+                          ),
+                        ),
+                      ],
+                      onChanged: (v) => setState(() => _groupId = v),
+                    ),
+                  );
+                },
+              ),
               CustomTextField(
                 label: 'Purpose',
                 controller: _purposeController,

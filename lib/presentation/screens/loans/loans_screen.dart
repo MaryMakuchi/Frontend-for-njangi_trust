@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_strings.dart';
+import '../../../core/utils/api_helper.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/input_formatters.dart';
 import '../../../domain/entities/loan_entity.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/custom_text_field.dart';
 
 class LoansScreen extends ConsumerWidget {
   const LoansScreen({super.key});
@@ -105,14 +109,95 @@ class LoansScreen extends ConsumerWidget {
   }
 }
 
-class _LoanCard extends StatelessWidget {
+class _LoanCard extends ConsumerStatefulWidget {
   const _LoanCard({required this.loan, required this.statusColor});
 
   final LoanEntity loan;
   final Color statusColor;
 
   @override
+  ConsumerState<_LoanCard> createState() => _LoanCardState();
+}
+
+class _LoanCardState extends ConsumerState<_LoanCard> {
+  void _showRepayDialog(BuildContext context) {
+    final loan = widget.loan;
+    final controller = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: const Text('Repay Loan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (loan.groupName != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text('Group: ${loan.groupName}'),
+                ),
+              Text('Remaining balance: ${Formatters.currency(loan.remainingBalance ?? 0)}'),
+              const SizedBox(height: 16),
+              CustomTextField(
+                label: 'Amount (CFA)',
+                controller: controller,
+                keyboardType: TextInputType.number,
+                inputFormatters: [ThousandsSeparatorInputFormatter()],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      final amount = double.tryParse(controller.text.replaceAll(',', ''));
+                      if (amount == null || amount <= 0) return;
+                      setState(() => isLoading = true);
+                      try {
+                        await ref.read(loanRepositoryProvider).repayLoan(
+                              loanId: loan.id,
+                              amount: amount,
+                            );
+                        ref.invalidate(loansProvider);
+                        ref.invalidate(dashboardProvider);
+                        ref.read(authStateProvider.notifier).refreshUser();
+                        if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                      } catch (e) {
+                        setState(() => isLoading = false);
+                        if (dialogContext.mounted) {
+                          final message =
+                              e is ApiException ? e.message : AppStrings.genericError;
+                          ScaffoldMessenger.of(dialogContext)
+                              .showSnackBar(SnackBar(content: Text(message)));
+                        }
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Repay'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final loan = widget.loan;
+    final statusColor = widget.statusColor;
     final progress = loan.status == LoanStatus.active && loan.remainingBalance != null
         ? 1 - (loan.remainingBalance! / loan.amount)
         : loan.status == LoanStatus.repaid
@@ -166,6 +251,13 @@ class _LoanCard extends StatelessWidget {
             Text(
               'Remaining: ${Formatters.currency(loan.remainingBalance ?? 0)}',
               style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            CustomButton(
+              label: 'Repay',
+              icon: Icons.payments_outlined,
+              isOutlined: true,
+              onPressed: () => _showRepayDialog(context),
             ),
           ],
         ],

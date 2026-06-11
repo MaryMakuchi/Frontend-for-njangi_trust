@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/api_helper.dart';
-import '../../../core/utils/formatters.dart';
 import '../../../core/utils/input_formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../../domain/entities/linked_account_entity.dart';
 import '../../providers/providers.dart';
+import '../../widgets/balance_text.dart';
 import '../../widgets/custom_text_field.dart';
 
 class WalletAccountsScreen extends ConsumerWidget {
@@ -47,18 +47,25 @@ class WalletAccountsScreen extends ConsumerWidget {
                       style: TextStyle(color: AppColors.white),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      Formatters.currency(dashboard.walletBalance),
+                    BalanceText(
+                      dashboard.walletBalance,
                       style: const TextStyle(
                         color: AppColors.white,
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
                       ),
+                      iconColor: AppColors.white,
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      'Savings Balance: ${Formatters.currency(dashboard.savingsBalance)}',
-                      style: const TextStyle(color: AppColors.white),
+                    Row(
+                      children: [
+                        const Text('Savings Balance: ', style: TextStyle(color: AppColors.white)),
+                        BalanceText(
+                          dashboard.savingsBalance,
+                          style: const TextStyle(color: AppColors.white),
+                          iconColor: AppColors.white,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -337,6 +344,27 @@ class WalletAccountsScreen extends ConsumerWidget {
                   ? null
                   : () async {
                       if (!formKey.currentState!.validate()) return;
+                      final confirmed = await showDialog<bool>(
+                        context: dialogContext,
+                        builder: (confirmContext) => AlertDialog(
+                          title: const Text('Verify Account'),
+                          content: const Text(
+                            'A fee of 50 CFA will be deducted from your Mobile Money '
+                            'to verify this account number. Do you want to continue?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(confirmContext).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.of(confirmContext).pop(true),
+                              child: const Text('Continue'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed != true) return;
                       setState(() => isLoading = true);
                       try {
                         await ref.read(walletRepositoryProvider).addLinkedAccount(

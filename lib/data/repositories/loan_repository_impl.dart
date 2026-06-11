@@ -64,4 +64,14 @@ class LoanRepositoryImpl implements LoanRepository {
     final response = await _api.post('/loans/request/', body: body);
     return LoanModel.fromJson(parseJsonResponse(response));
   }
+
+  @override
+  Future<LoanEntity> repayLoan({required String loanId, required double amount}) async {
+    if (AppConstants.useMockData) {
+      throw UnsupportedError('Loan repayment is not available in mock mode');
+    }
+
+    final response = await _api.post('/loans/$loanId/repay/', body: {'amount': amount});
+    return LoanModel.fromJson(parseJsonResponse(response));
+  }
 }

@@ -6,6 +6,7 @@ import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/formatters.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
+import '../../widgets/balance_text.dart';
 import '../../widgets/financial_summary_card.dart';
 import '../../widgets/loading_skeleton.dart';
 import '../../widgets/mri_score_card.dart';
@@ -276,12 +277,13 @@ class _TotalBalanceCard extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 8),
-            Text(
-              Formatters.currency(totalBalance),
+            BalanceText(
+              totalBalance,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppColors.white,
                     fontWeight: FontWeight.w800,
                   ),
+              iconColor: AppColors.white,
             ),
             const SizedBox(height: 4),
             Text(

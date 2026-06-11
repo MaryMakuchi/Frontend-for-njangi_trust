@@ -12,6 +12,7 @@ class LoanEntity extends Equatable {
     required this.interestRate,
     this.remainingBalance,
     this.dueDate,
+    this.groupId,
     this.groupName,
     this.approvedDate,
   });
@@ -24,6 +25,7 @@ class LoanEntity extends Equatable {
   final double interestRate;
   final double? remainingBalance;
   final DateTime? dueDate;
+  final String? groupId;
   final String? groupName;
   final DateTime? approvedDate;
 
@@ -40,6 +42,7 @@ class LoanEntity extends Equatable {
         interestRate,
         remainingBalance,
         dueDate,
+        groupId,
         groupName,
         approvedDate,
       ];

@@ -9,4 +9,5 @@ abstract class LoanRepository {
     required int durationMonths,
     String? groupId,
   });
+  Future<LoanEntity> repayLoan({required String loanId, required double amount});
 }

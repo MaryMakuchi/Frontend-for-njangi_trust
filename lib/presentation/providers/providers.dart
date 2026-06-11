@@ -197,5 +197,8 @@ final groupSocialFundsProvider =
 // Onboarding flag
 final onboardingCompleteProvider = StateProvider<bool>((ref) => false);
 
+// Whether wallet/savings balances are currently revealed (PIN-gated)
+final balanceVisibleProvider = StateProvider<bool>((ref) => false);
+
 // Last payment result for success screen
 final lastPaymentProvider = StateProvider<TransactionEntity?>((ref) => null);

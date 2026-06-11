@@ -14,6 +14,7 @@ class LoanModel {
           ? parseDouble(json['remaining_balance'])
           : null,
       dueDate: parseDateTime(json['due_date']),
+      groupId: json['group_id']?.toString(),
       groupName: json['group_name'] as String?,
       approvedDate: parseDateTime(json['approved_date']),
     );
