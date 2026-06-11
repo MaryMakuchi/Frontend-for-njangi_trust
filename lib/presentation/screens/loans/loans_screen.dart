@@ -34,6 +34,10 @@ class LoansScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Loans'),
         automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go(AppRoutes.home),
+        ),
       ),
       body: loansAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

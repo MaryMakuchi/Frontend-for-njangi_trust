@@ -25,9 +25,11 @@ import '../screens/onboarding/splash_screen.dart';
 import '../screens/profile/blockchain_ledger_screen.dart';
 import '../screens/profile/mri_score_screen.dart';
 import '../screens/profile/notifications_screen.dart';
+import '../screens/profile/personal_info_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/savings_screen.dart';
 import '../screens/profile/social_fund_screen.dart';
+import '../screens/profile/wallet_accounts_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -57,6 +59,8 @@ class AppRoutes {
   static const savings = '/savings';
   static const socialFund = '/social-fund';
   static const blockchainLedger = '/blockchain-ledger';
+  static const personalInfo = '/personal-info';
+  static const walletAccounts = '/wallet-accounts';
 }
 
 class _AuthRefreshNotifier extends ChangeNotifier {
@@ -232,6 +236,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.blockchainLedger,
         builder: (_, __) => const BlockchainLedgerScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.personalInfo,
+        builder: (_, __) => const PersonalInfoScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.walletAccounts,
+        builder: (_, __) => const WalletAccountsScreen(),
       ),
     ],
     errorBuilder: (_, state) => Scaffold(

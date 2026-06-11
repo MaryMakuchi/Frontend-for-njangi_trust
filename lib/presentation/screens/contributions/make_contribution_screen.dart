@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/input_formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
@@ -93,6 +94,7 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
                   controller: _amountController,
                   keyboardType: TextInputType.number,
                   validator: Validators.amount,
+                  inputFormatters: [ThousandsSeparatorInputFormatter()],
                   prefixIcon: const Icon(Icons.attach_money),
                 ),
                 const SizedBox(height: 16),
@@ -104,7 +106,8 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
                     return ActionChip(
                       label: Text(Formatters.currency(amount, showSymbol: false)),
                       onPressed: () {
-                        _amountController.text = amount.toString();
+                        _amountController.text =
+                            Formatters.currency(amount, showSymbol: false);
                       },
                       backgroundColor: AppColors.purpleSurface,
                     );

@@ -85,7 +85,7 @@ class ProfileScreen extends ConsumerWidget {
           _MenuItem(
             icon: Icons.person_outline,
             title: 'Personal Information',
-            onTap: () {},
+            onTap: () => context.push(AppRoutes.personalInfo),
           ),
           _MenuItem(
             icon: Icons.verified_user_outlined,
@@ -97,8 +97,8 @@ class ProfileScreen extends ConsumerWidget {
           ),
           _MenuItem(
             icon: Icons.account_balance_wallet_outlined,
-            title: 'Wallet & Accounts',
-            onTap: () {},
+            title: 'Wallet Accounts',
+            onTap: () => context.push(AppRoutes.walletAccounts),
           ),
           _MenuItem(
             icon: Icons.security_outlined,

@@ -69,10 +69,29 @@ class DashboardScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  MriScoreCard(
-                    score: dashboard.mriScore,
-                    trend: dashboard.mriTrend,
-                    onTap: () => context.push(AppRoutes.mriScore),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: MriScoreCard(
+                            score: dashboard.mriScore,
+                            trend: dashboard.mriTrend,
+                            compact: true,
+                            onTap: () => context.push(AppRoutes.mriScore),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: _TotalBalanceCard(
+                            totalBalance: dashboard.totalBalance,
+                            onTap: () => context.push(AppRoutes.savings),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -122,32 +141,46 @@ class DashboardScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: AppColors.purple.withValues(alpha: 0.2)),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.event, color: AppColors.purple),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppStrings.nextPayout,
-                                style: Theme.of(context).textTheme.bodySmall,
+                        Row(
+                          children: [
+                            const Icon(Icons.event, color: AppColors.purple),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    AppStrings.nextPayout,
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                  Text(
+                                    Formatters.date(dashboard.nextPaymentDate),
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          color: AppColors.purple,
+                                        ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                Formatters.date(dashboard.nextPaymentDate),
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      color: AppColors.purple,
-                                    ),
-                              ),
-                            ],
-                          ),
+                            ),
+                            Text(
+                              Formatters.currency(dashboard.currentPayout),
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          Formatters.currency(dashboard.currentPayout),
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.push(AppRoutes.walletAccounts),
+                            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+                            label: const Text('Add Wallet'),
+                          ),
                         ),
                       ],
                     ),
@@ -208,6 +241,56 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TotalBalanceCard extends StatelessWidget {
+  const _TotalBalanceCard({required this.totalBalance, this.onTap});
+
+  final double totalBalance;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: AppColors.goldGradient,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Total Balance',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              Formatters.currency(totalBalance),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Savings + Wallet',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.white.withValues(alpha: 0.85),
+                  ),
+            ),
+          ],
         ),
       ),
     );

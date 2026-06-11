@@ -20,6 +20,12 @@ class TransactionTile extends StatelessWidget {
         return Icons.payments_outlined;
       case TransactionType.socialFund:
         return Icons.favorite_outline;
+      case TransactionType.walletTopup:
+      case TransactionType.walletWithdrawal:
+        return Icons.account_balance_wallet_outlined;
+      case TransactionType.savingsDeposit:
+      case TransactionType.savingsWithdrawal:
+        return Icons.savings_outlined;
     }
   }
 
