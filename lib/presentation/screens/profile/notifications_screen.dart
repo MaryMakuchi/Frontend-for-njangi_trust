@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../domain/entities/notification_entity.dart';
 import '../../providers/providers.dart';
+import '../../routes/app_router.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -20,6 +22,24 @@ class NotificationsScreen extends ConsumerWidget {
         return Icons.event;
       case NotificationType.groupAnnouncement:
         return Icons.campaign_outlined;
+    }
+  }
+
+  void _navigateToTarget(BuildContext context, NotificationEntity n) {
+    switch (n.targetType) {
+      case 'group':
+        if (n.targetId.isNotEmpty) {
+          context.push('${AppRoutes.groups}/${n.targetId}');
+        }
+        break;
+      case 'loan':
+        context.push(AppRoutes.loans);
+        break;
+      case 'transaction':
+        context.push(AppRoutes.blockchainLedger);
+        break;
+      default:
+        break;
     }
   }
 
@@ -68,6 +88,7 @@ class NotificationsScreen extends ConsumerWidget {
               onTap: () {
                 ref.read(notificationRepositoryProvider).markAsRead(n.id);
                 ref.invalidate(notificationsProvider);
+                _navigateToTarget(context, n);
               },
             );
           },

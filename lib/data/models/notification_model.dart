@@ -10,6 +10,8 @@ class NotificationModel {
       type: _parseType(json['type'] as String?),
       createdAt: parseDateTime(json['created_at']) ?? DateTime.now(),
       isRead: json['is_read'] as bool? ?? false,
+      targetType: json['target_type'] as String? ?? '',
+      targetId: json['target_id']?.toString() ?? '',
     );
   }
 

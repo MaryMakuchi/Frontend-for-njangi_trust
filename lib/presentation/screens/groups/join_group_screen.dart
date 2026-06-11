@@ -30,13 +30,12 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
     }
     setState(() => _isLoading = true);
     try {
-      await ref.read(groupRepositoryProvider).joinGroup(
+      final detail = await ref.read(groupRepositoryProvider).joinGroup(
             invitationCode: _codeController.text.trim().toUpperCase(),
           );
-      ref.invalidate(groupsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Successfully joined group!')),
+          SnackBar(content: Text(detail)),
         );
         context.pop();
       }

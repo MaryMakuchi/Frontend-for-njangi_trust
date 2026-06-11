@@ -3,11 +3,15 @@ import '../../core/services/api_service.dart';
 import '../../core/utils/api_helper.dart';
 import '../../domain/entities/group_entity.dart';
 import '../../domain/entities/group_message_entity.dart';
+import '../../domain/entities/membership_request_entity.dart';
+import '../../domain/entities/savings_entity.dart';
 import '../../domain/entities/social_fund_entity.dart';
 import '../../domain/repositories/group_repository.dart';
 import '../datasources/mock_data.dart';
 import '../models/group_message_model.dart';
 import '../models/group_model.dart';
+import '../models/membership_request_model.dart';
+import '../models/savings_model.dart';
 import '../models/social_fund_model.dart';
 
 class GroupRepositoryImpl implements GroupRepository {
@@ -84,18 +88,12 @@ class GroupRepositoryImpl implements GroupRepository {
   }
 
   @override
-  Future<GroupEntity> joinGroup({
+  Future<String> joinGroup({
     String? invitationCode,
     String? groupId,
   }) async {
     if (AppConstants.useMockData) {
-      if (invitationCode != null) {
-        return MockData.groups.firstWhere(
-          (g) => g.invitationCode == invitationCode,
-          orElse: () => throw Exception('Invalid invitation code'),
-        );
-      }
-      return MockData.groups.firstWhere((g) => g.id == groupId);
+      return 'Membership request sent. Waiting for approval.';
     }
 
     final body = <String, dynamic>{};
@@ -103,7 +101,8 @@ class GroupRepositoryImpl implements GroupRepository {
     if (groupId != null) body['group_id'] = groupId;
 
     final response = await _api.post('/groups/join/', body: body);
-    return GroupModel.fromJson(parseJsonResponse(response));
+    final json = parseJsonResponse(response);
+    return json['detail'] as String? ?? 'Membership request sent. Waiting for approval.';
   }
 
   @override
@@ -289,5 +288,118 @@ class GroupRepositoryImpl implements GroupRepository {
       body: {'message': message},
     );
     return GroupMessageModel.fromJson(parseJsonResponse(response));
+  }
+
+  @override
+  Future<GroupSavingsEntity> getGroupSavings(String groupId) async {
+    if (AppConstants.useMockData) {
+      return const GroupSavingsEntity(period: null, mySavings: null);
+    }
+
+    final response = await _api.get('/groups/$groupId/savings/');
+    return GroupSavingsModel.fromJson(parseJsonResponse(response));
+  }
+
+  @override
+  Future<SavingsPeriodEntity> startSavingsPeriod({
+    required String groupId,
+    required double interestRate,
+    required String interestType,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    if (AppConstants.useMockData) {
+      return SavingsPeriodEntity(
+        id: 'period_${DateTime.now().millisecondsSinceEpoch}',
+        interestRate: interestRate,
+        interestType: interestType,
+        startDate: startDate,
+        endDate: endDate,
+        status: 'active',
+        isClosed: false,
+      );
+    }
+
+    final response = await _api.post(
+      '/groups/$groupId/savings/start/',
+      body: {
+        'interest_rate': interestRate.toStringAsFixed(2),
+        'interest_type': interestType,
+        'start_date': startDate.toIso8601String().split('T').first,
+        'end_date': endDate.toIso8601String().split('T').first,
+      },
+    );
+    return SavingsPeriodModel.fromJson(parseJsonResponse(response));
+  }
+
+  @override
+  Future<SavingsSummaryEntity> depositToGroupSavings({
+    required String groupId,
+    required double amount,
+  }) async {
+    if (AppConstants.useMockData) {
+      return SavingsSummaryEntity(
+        principal: amount,
+        interestAccrued: 0,
+        total: amount,
+        deposits: [SavingsDepositEntity(amount: amount, date: DateTime.now())],
+      );
+    }
+
+    final response = await _api.post(
+      '/groups/$groupId/savings/deposit/',
+      body: {'amount': amount.toStringAsFixed(2)},
+    );
+    final json = parseJsonResponse(response);
+    final mySavings = json['my_savings'] as Map<String, dynamic>? ?? json;
+    return SavingsSummaryModel.fromJson(mySavings);
+  }
+
+  @override
+  Future<SavingsWithdrawalResultEntity> withdrawGroupSavings(String groupId) async {
+    if (AppConstants.useMockData) {
+      return const SavingsWithdrawalResultEntity(
+        amountWithdrawn: 0,
+        newWalletBalance: 0,
+      );
+    }
+
+    final response = await _api.post('/groups/$groupId/savings/withdraw/', body: const {});
+    return SavingsWithdrawalResultModel.fromJson(parseJsonResponse(response));
+  }
+
+  @override
+  Future<void> closeSavingsPeriod(String groupId) async {
+    if (AppConstants.useMockData) return;
+
+    await _api.post('/groups/$groupId/savings/close/', body: const {});
+  }
+
+  @override
+  Future<List<MembershipRequestEntity>> getMembershipRequests(String groupId) async {
+    if (AppConstants.useMockData) return [];
+
+    final response = await _api.get('/groups/$groupId/membership-requests/');
+    return parseListResponse(response)
+        .map((e) => MembershipRequestModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<String> respondToMembershipRequest({
+    required String groupId,
+    required String requestId,
+    required String decision,
+  }) async {
+    if (AppConstants.useMockData) {
+      return decision == 'accept' ? 'accepted' : 'rejected';
+    }
+
+    final response = await _api.post(
+      '/groups/$groupId/membership-requests/$requestId/respond/',
+      body: {'decision': decision},
+    );
+    final json = parseJsonResponse(response);
+    return json['status'] as String? ?? '';
   }
 }

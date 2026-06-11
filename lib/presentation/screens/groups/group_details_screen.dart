@@ -6,6 +6,7 @@ import '../../../core/utils/api_helper.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/input_formatters.dart';
 import '../../../domain/entities/group_entity.dart';
+import '../../../domain/entities/membership_request_entity.dart';
 import '../../../domain/entities/social_fund_entity.dart';
 import '../../providers/providers.dart';
 import '../../widgets/balance_text.dart';
@@ -388,6 +389,10 @@ class _OverviewTab extends ConsumerWidget {
               label: const Text('Edit group settings'),
             ),
           ),
+        if (isPresident) ...[
+          _PendingMembershipRequests(group: group),
+          const SizedBox(height: 8),
+        ],
         _InfoRow(
           'Contribution',
           Formatters.currency(group.contributionAmount),
@@ -533,6 +538,107 @@ class _OverviewTab extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PendingMembershipRequests extends ConsumerWidget {
+  const _PendingMembershipRequests({required this.group});
+
+  final GroupEntity group;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final requestsAsync = ref.watch(membershipRequestsProvider(group.id));
+
+    return requestsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (requests) {
+        if (requests.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.purpleSurface,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Pending Membership Requests',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              for (final request in requests)
+                _MembershipRequestTile(group: group, request: request),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MembershipRequestTile extends ConsumerStatefulWidget {
+  const _MembershipRequestTile({required this.group, required this.request});
+
+  final GroupEntity group;
+  final MembershipRequestEntity request;
+
+  @override
+  ConsumerState<_MembershipRequestTile> createState() => _MembershipRequestTileState();
+}
+
+class _MembershipRequestTileState extends ConsumerState<_MembershipRequestTile> {
+  bool _isLoading = false;
+
+  Future<void> _respond(String decision) async {
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(groupRepositoryProvider).respondToMembershipRequest(
+            groupId: widget.group.id,
+            requestId: widget.request.id,
+            decision: decision,
+          );
+      ref.invalidate(membershipRequestsProvider(widget.group.id));
+      ref.invalidate(groupsProvider);
+    } catch (e) {
+      if (mounted) {
+        final message = e is ApiException ? e.message : AppStrings.genericError;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(widget.request.userName),
+      trailing: _isLoading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.check_circle, color: AppColors.success),
+                  onPressed: () => _respond('accept'),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.cancel, color: AppColors.error),
+                  onPressed: () => _respond('reject'),
+                ),
+              ],
+            ),
     );
   }
 }

@@ -1,5 +1,7 @@
 import '../entities/group_entity.dart';
 import '../entities/group_message_entity.dart';
+import '../entities/membership_request_entity.dart';
+import '../entities/savings_entity.dart';
 import '../entities/social_fund_entity.dart';
 
 abstract class GroupRepository {
@@ -16,7 +18,7 @@ abstract class GroupRepository {
     int durationMonths = 12,
     String pickingMode = 'random',
   });
-  Future<GroupEntity> joinGroup({String? invitationCode, String? groupId});
+  Future<String> joinGroup({String? invitationCode, String? groupId});
   Future<GroupEntity> assignPickingOrder({
     required String groupId,
     required String mode,
@@ -44,5 +46,29 @@ abstract class GroupRepository {
   Future<GroupMessageEntity> sendGroupMessage({
     required String groupId,
     required String message,
+  });
+
+  // Group savings (#6, #7)
+  Future<GroupSavingsEntity> getGroupSavings(String groupId);
+  Future<SavingsPeriodEntity> startSavingsPeriod({
+    required String groupId,
+    required double interestRate,
+    required String interestType,
+    required DateTime startDate,
+    required DateTime endDate,
+  });
+  Future<SavingsSummaryEntity> depositToGroupSavings({
+    required String groupId,
+    required double amount,
+  });
+  Future<SavingsWithdrawalResultEntity> withdrawGroupSavings(String groupId);
+  Future<void> closeSavingsPeriod(String groupId);
+
+  // Membership requests (#15)
+  Future<List<MembershipRequestEntity>> getMembershipRequests(String groupId);
+  Future<String> respondToMembershipRequest({
+    required String groupId,
+    required String requestId,
+    required String decision,
   });
 }

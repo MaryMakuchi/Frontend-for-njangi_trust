@@ -15,7 +15,9 @@ import '../../domain/entities/group_entity.dart';
 import '../../domain/entities/group_message_entity.dart';
 import '../../domain/entities/linked_account_entity.dart';
 import '../../domain/entities/loan_entity.dart';
+import '../../domain/entities/membership_request_entity.dart';
 import '../../domain/entities/notification_entity.dart';
+import '../../domain/entities/savings_entity.dart';
 import '../../domain/entities/social_fund_entity.dart';
 import '../../domain/entities/transaction_entity.dart';
 import '../../domain/entities/user_entity.dart';
@@ -202,6 +204,16 @@ final groupSocialFundsProvider =
 final groupMessagesProvider =
     FutureProvider.family<List<GroupMessageEntity>, String>((ref, groupId) {
   return ref.watch(groupRepositoryProvider).getGroupMessages(groupId);
+});
+
+final groupSavingsProvider =
+    FutureProvider.family<GroupSavingsEntity, String>((ref, groupId) {
+  return ref.watch(groupRepositoryProvider).getGroupSavings(groupId);
+});
+
+final membershipRequestsProvider =
+    FutureProvider.family<List<MembershipRequestEntity>, String>((ref, groupId) {
+  return ref.watch(groupRepositoryProvider).getMembershipRequests(groupId);
 });
 
 // Onboarding flag
