@@ -19,6 +19,7 @@ abstract class GroupRepository {
     String pickingMode = 'random',
   });
   Future<String> joinGroup({String? invitationCode, String? groupId});
+  Future<List<GroupSearchResultEntity>> searchGroups(String query);
   Future<GroupEntity> assignPickingOrder({
     required String groupId,
     required String mode,

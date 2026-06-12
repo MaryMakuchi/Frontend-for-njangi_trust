@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -12,6 +13,7 @@ import '../../providers/providers.dart';
 import '../../widgets/balance_text.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/group_savings_panel.dart';
 
 class GroupDetailsScreen extends ConsumerWidget {
   const GroupDetailsScreen({super.key, required this.groupId});
@@ -30,7 +32,7 @@ class GroupDetailsScreen extends ConsumerWidget {
         data: (groups) {
           final group = groups.firstWhere((g) => g.id == groupId);
           return DefaultTabController(
-            length: 6,
+            length: 7,
             child: Column(
               children: [
                 _GroupHeader(group: group),
@@ -44,6 +46,7 @@ class GroupDetailsScreen extends ConsumerWidget {
                     Tab(text: 'Members'),
                     Tab(text: 'Social Fund'),
                     Tab(text: 'Ledger'),
+                    Tab(text: 'Savings'),
                     Tab(text: 'Loans'),
                     Tab(text: 'Chat'),
                   ],
@@ -55,6 +58,7 @@ class GroupDetailsScreen extends ConsumerWidget {
                       _MembersTab(group: group),
                       _SocialFundTab(group: group),
                       const Center(child: Text('Ledger coming soon')),
+                      _SavingsTab(group: group),
                       const Center(child: Text('Group loans coming soon')),
                       _ChatTab(group: group),
                     ],
@@ -410,8 +414,8 @@ class _OverviewTab extends ConsumerWidget {
           ),
         _InfoRow('Pickers per Cycle', '${group.pickersPerCycle}'),
         _InfoRow('Cycle Progress', '${group.cycleProgress}/${group.maxMembers}'),
-        if (group.invitationCode != null)
-          _InfoRow('Invite Code', group.invitationCode!),
+        if (isPresident && group.invitationCode != null)
+          _InviteCodeRow(code: group.invitationCode!),
         if (group.rules != null) ...[
           const SizedBox(height: 16),
           Text('Rules', style: Theme.of(context).textTheme.titleSmall),
@@ -425,7 +429,7 @@ class _OverviewTab extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
-          if (group.scheduleGenerated)
+          if (group.scheduleGenerated && !group.rotationStarted)
             Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(12),
@@ -438,7 +442,18 @@ class _OverviewTab extends ConsumerWidget {
                 'below — this will overwrite the current order.',
               ),
             ),
-          if (!canAssignPicking)
+          if (group.rotationStarted)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.purpleSurface,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Picking order is locked — the rotation has started.',
+              ),
+            )
+          else if (!canAssignPicking)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -1183,6 +1198,33 @@ class _SocialFundCardState extends ConsumerState<_SocialFundCard> {
   }
 }
 
+class _SavingsTab extends ConsumerWidget {
+  const _SavingsTab({required this.group});
+
+  final GroupEntity group;
+
+  bool _isPresident(WidgetRef ref) {
+    final user = ref.watch(authStateProvider).valueOrNull;
+    if (user == null) return false;
+    final membership = group.members.where((m) => m.id == user.id);
+    return membership.isNotEmpty && membership.first.role == GroupRole.president;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPresident = _isPresident(ref);
+
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(groupSavingsProvider(group.id)),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: GroupSavingsPanel(groupId: group.id, isPresident: isPresident),
+      ),
+    );
+  }
+}
+
 class _ChatTab extends ConsumerStatefulWidget {
   const _ChatTab({required this.group});
 
@@ -1317,6 +1359,57 @@ class _ChatTabState extends ConsumerState<_ChatTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _InviteCodeRow extends StatelessWidget {
+  const _InviteCodeRow({required this.code});
+
+  final String code;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('Invite Code', style: Theme.of(context).textTheme.bodyMedium),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(code, style: Theme.of(context).textTheme.titleSmall),
+              IconButton(
+                icon: const Icon(Icons.copy, size: 18),
+                tooltip: 'Copy invite code',
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: code));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Invite code copied to clipboard')),
+                    );
+                  }
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.share_outlined, size: 18),
+                tooltip: 'Share invite code',
+                onPressed: () async {
+                  await Clipboard.setData(
+                    ClipboardData(text: 'Join my Njangi group using invite code: $code'),
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Invite message copied to clipboard')),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

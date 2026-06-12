@@ -29,6 +29,18 @@ class GroupModel {
       currentPicker: json['current_picker'] != null
           ? CurrentPickerModel.fromJson(json['current_picker'] as Map<String, dynamic>)
           : null,
+      rotationStarted: json['rotation_started'] as bool? ?? false,
+    );
+  }
+}
+
+class GroupSearchResultModel {
+  static GroupSearchResultEntity fromJson(Map<String, dynamic> json) {
+    return GroupSearchResultEntity(
+      id: json['id'].toString(),
+      name: json['name'] as String,
+      memberCount: parseInt(json['member_count']),
+      maxMembers: parseInt(json['max_members']),
     );
   }
 }

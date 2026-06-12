@@ -216,6 +216,17 @@ final membershipRequestsProvider =
   return ref.watch(groupRepositoryProvider).getMembershipRequests(groupId);
 });
 
+// Group search (#8) — query string updated by the join-group screen, debounced
+// before being applied here.
+final groupSearchQueryProvider = StateProvider<String>((ref) => '');
+
+final groupSearchResultsProvider =
+    FutureProvider<List<GroupSearchResultEntity>>((ref) {
+  final query = ref.watch(groupSearchQueryProvider);
+  if (query.trim().isEmpty) return Future.value(const []);
+  return ref.watch(groupRepositoryProvider).searchGroups(query);
+});
+
 // Onboarding flag
 final onboardingCompleteProvider = StateProvider<bool>((ref) => false);
 

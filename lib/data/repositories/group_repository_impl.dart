@@ -106,6 +106,18 @@ class GroupRepositoryImpl implements GroupRepository {
   }
 
   @override
+  Future<List<GroupSearchResultEntity>> searchGroups(String query) async {
+    if (AppConstants.useMockData) return [];
+
+    if (query.trim().isEmpty) return [];
+
+    final response = await _api.get('/groups/search/?q=${Uri.encodeQueryComponent(query.trim())}');
+    return parseListResponse(response)
+        .map((e) => GroupSearchResultModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
   Future<GroupEntity> assignPickingOrder({
     required String groupId,
     required String mode,

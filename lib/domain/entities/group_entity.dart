@@ -96,6 +96,23 @@ class PlayNjangiResultEntity extends Equatable {
       ];
 }
 
+class GroupSearchResultEntity extends Equatable {
+  const GroupSearchResultEntity({
+    required this.id,
+    required this.name,
+    required this.memberCount,
+    required this.maxMembers,
+  });
+
+  final String id;
+  final String name;
+  final int memberCount;
+  final int maxMembers;
+
+  @override
+  List<Object?> get props => [id, name, memberCount, maxMembers];
+}
+
 class GroupEntity extends Equatable {
   const GroupEntity({
     required this.id,
@@ -120,6 +137,7 @@ class GroupEntity extends Equatable {
     this.pickersPerCycle = 1,
     this.endDate,
     this.currentPicker,
+    this.rotationStarted = false,
   });
 
   final String id;
@@ -144,6 +162,7 @@ class GroupEntity extends Equatable {
   final int pickersPerCycle;
   final DateTime? endDate;
   final CurrentPickerEntity? currentPicker;
+  final bool rotationStarted;
 
   DateTime get effectiveEndDate =>
       endDate ?? DateTime(startDate.year, startDate.month + durationMonths, startDate.day);
@@ -172,5 +191,6 @@ class GroupEntity extends Equatable {
         pickersPerCycle,
         endDate,
         currentPicker,
+        rotationStarted,
       ];
 }
