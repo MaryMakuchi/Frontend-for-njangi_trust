@@ -76,7 +76,8 @@ class WalletAccountsScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _showTopUpDialog(context, ref),
+                    onPressed: () =>
+                        _showTopUpDialog(context, ref, accountsAsync.valueOrNull ?? []),
                     icon: const Icon(Icons.add),
                     label: const Text('Top Up Wallet'),
                   ),
@@ -127,20 +128,50 @@ class WalletAccountsScreen extends ConsumerWidget {
     );
   }
 
-  void _showTopUpDialog(BuildContext context, WidgetRef ref) {
+  void _showTopUpDialog(
+    BuildContext context,
+    WidgetRef ref,
+    List<LinkedAccountEntity> accounts,
+  ) {
+    if (accounts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add a linked account before topping up.')),
+      );
+      return;
+    }
+
     final controller = TextEditingController();
     bool isLoading = false;
+    String? selectedAccountId =
+        accounts.firstWhere((a) => a.isDefault, orElse: () => accounts.first).id;
 
     showDialog(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setState) => AlertDialog(
           title: const Text('Top Up Wallet'),
-          content: CustomTextField(
-            label: 'Amount (CFA)',
-            controller: controller,
-            keyboardType: TextInputType.number,
-            inputFormatters: [ThousandsSeparatorInputFormatter()],
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CustomTextField(
+                label: 'Amount (CFA)',
+                controller: controller,
+                keyboardType: TextInputType.number,
+                inputFormatters: [ThousandsSeparatorInputFormatter()],
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: selectedAccountId,
+                decoration: const InputDecoration(labelText: 'Top up from'),
+                items: accounts
+                    .map((a) => DropdownMenuItem(
+                          value: a.id,
+                          child: Text('${a.provider} - ${a.accountNumber}'),
+                        ))
+                    .toList(),
+                onChanged: (v) => setState(() => selectedAccountId = v),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -152,10 +183,13 @@ class WalletAccountsScreen extends ConsumerWidget {
                   ? null
                   : () async {
                       final amount = double.tryParse(controller.text.replaceAll(',', ''));
-                      if (amount == null || amount <= 0) return;
+                      if (amount == null || amount <= 0 || selectedAccountId == null) return;
                       setState(() => isLoading = true);
                       try {
-                        await ref.read(walletRepositoryProvider).topUpWallet(amount);
+                        await ref.read(walletRepositoryProvider).topUpWallet(
+                              amount,
+                              linkedAccountId: selectedAccountId,
+                            );
                         ref.invalidate(dashboardProvider);
                         ref.read(authStateProvider.notifier).refreshUser();
                         if (dialogContext.mounted) Navigator.of(dialogContext).pop();

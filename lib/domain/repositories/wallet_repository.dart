@@ -11,7 +11,7 @@ abstract class WalletRepository {
     bool isDefault = false,
   });
   Future<void> deleteLinkedAccount(String id);
-  Future<BalanceUpdateEntity> topUpWallet(double amount);
+  Future<BalanceUpdateEntity> topUpWallet(double amount, {String? linkedAccountId});
   Future<BalanceUpdateEntity> withdrawWallet({required double amount, required String linkedAccountId});
   Future<BalanceUpdateEntity> depositToSavings(double amount);
   Future<BalanceUpdateEntity> withdrawFromSavings(double amount);

@@ -60,11 +60,17 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   @override
-  Future<BalanceUpdateEntity> topUpWallet(double amount) async {
+  Future<BalanceUpdateEntity> topUpWallet(double amount, {String? linkedAccountId}) async {
     if (AppConstants.useMockData) {
       throw UnsupportedError('Wallet top-up is not available in mock mode');
     }
-    final response = await _api.post('/wallet/topup/', body: {'amount': amount});
+    final response = await _api.post(
+      '/wallet/topup/',
+      body: {
+        'amount': amount,
+        if (linkedAccountId != null) 'linked_account_id': linkedAccountId,
+      },
+    );
     return _parseBalances(parseJsonResponse(response));
   }
 
