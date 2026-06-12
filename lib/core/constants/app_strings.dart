@@ -24,6 +24,7 @@ class AppStrings {
   static const String socialFund = 'Social Fund';
   static const String currentPayout = 'Current Payout';
   static const String nextPayout = 'Next Payout';
+  static const String contributionDue = 'Contribution Due';
   static const String recentActivity = 'Recent Activity';
 
   // Navigation

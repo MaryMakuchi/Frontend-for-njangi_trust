@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/utils/api_helper.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../domain/entities/group_entity.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/balance_text.dart';
+import '../../widgets/custom_button.dart';
 import '../../widgets/financial_summary_card.dart';
 import '../../widgets/loading_skeleton.dart';
 import '../../widgets/mri_score_card.dart';
@@ -22,6 +25,12 @@ class DashboardScreen extends ConsumerWidget {
     final user = ref.watch(authStateProvider).valueOrNull;
 
     return Scaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showPlayNjangiGroupsSheet(context, ref),
+        icon: const Icon(Icons.casino_outlined),
+        label: const Text('Play Njangi'),
+      ),
       body: SafeArea(
         child: dashboardAsync.when(
           loading: () => const DashboardSkeleton(),
@@ -132,7 +141,15 @@ class DashboardScreen extends ConsumerWidget {
                           amount: dashboard.currentPayout,
                           icon: Icons.payments_outlined,
                           iconColor: AppColors.secondary,
-                          onWalletTap: () => context.push(AppRoutes.walletAccounts),
+                        ),
+                        const SizedBox(width: 12),
+                        FinancialSummaryCard(
+                          label: 'Wallet',
+                          value: Formatters.currency(dashboard.walletBalance),
+                          amount: dashboard.walletBalance,
+                          icon: Icons.account_balance_wallet_outlined,
+                          iconColor: AppColors.primary,
+                          onTap: () => context.push(AppRoutes.walletAccounts),
                         ),
                       ],
                     ),
@@ -158,7 +175,7 @@ class DashboardScreen extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    AppStrings.nextPayout,
+                                    AppStrings.contributionDue,
                                     style: Theme.of(context).textTheme.bodySmall,
                                   ),
                                   Text(
@@ -242,6 +259,303 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _showPlayNjangiGroupsSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => const _PlayNjangiGroupsSheet(),
+    );
+  }
+}
+
+class _PlayNjangiGroupsSheet extends ConsumerWidget {
+  const _PlayNjangiGroupsSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final groupsAsync = ref.watch(groupsProvider);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.casino_outlined, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text('Play Njangi', style: Theme.of(context).textTheme.titleLarge),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Select a group with an active picking order',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          groupsAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text('Error: $e'),
+            ),
+            data: (groups) {
+              final eligible = groups.where((g) => g.scheduleGenerated).toList();
+              if (eligible.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text('No groups have an active picking order yet'),
+                );
+              }
+              return ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: eligible.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final group = eligible[index];
+                  return _PlayNjangiGroupTile(group: group);
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlayNjangiGroupTile extends StatelessWidget {
+  const _PlayNjangiGroupTile({required this.group});
+
+  final GroupEntity group;
+
+  @override
+  Widget build(BuildContext context) {
+    final pickerName = group.currentPicker?.name;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        Navigator.of(context).pop();
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (context) => _PlayNjangiConfirmSheet(group: group),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.purpleSurface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.purple.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.groups_outlined, color: AppColors.purple),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    group.name,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  if (pickerName != null)
+                    Text(
+                      'Currently picking: $pickerName',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.mediumGray),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlayNjangiConfirmSheet extends ConsumerStatefulWidget {
+  const _PlayNjangiConfirmSheet({required this.group});
+
+  final GroupEntity group;
+
+  @override
+  ConsumerState<_PlayNjangiConfirmSheet> createState() => _PlayNjangiConfirmSheetState();
+}
+
+class _PlayNjangiConfirmSheetState extends ConsumerState<_PlayNjangiConfirmSheet> {
+  bool _isLoading = false;
+
+  Future<void> _confirmAndPlay() async {
+    setState(() => _isLoading = true);
+    try {
+      final result = await ref.read(groupRepositoryProvider).playNjangi(widget.group.id);
+      ref.invalidate(groupsProvider);
+      ref.invalidate(dashboardProvider);
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(
+        SnackBar(content: Text('Payment of ${Formatters.currency(result.amount)} successful!')),
+      );
+
+      if (result.cycleCompleted && result.payout != null) {
+        final payout = result.payout!;
+        final pickerName = result.currentPicker?.name;
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Cycle Completed!'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${Formatters.currency(payout.amount)} has been paid out to ${payout.recipientName}.',
+                ),
+                if (pickerName != null) ...[
+                  const SizedBox(height: 8),
+                  Text('The new current picker is $pickerName.'),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final message = e is ApiException ? e.message : AppStrings.genericError;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final group = widget.group;
+    final currentPicker = group.currentPicker;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.casino_outlined, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text('Play Njangi', style: Theme.of(context).textTheme.titleLarge),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            group.name,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.purpleSurface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Amount to pay',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 4),
+                BalanceText(
+                  group.contributionAmount,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                  iconColor: AppColors.darkGray,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'This is your fixed group contribution and cannot be changed.',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.successLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.emoji_events_outlined, color: AppColors.accent, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    currentPicker != null
+                        ? 'Currently picking: ${currentPicker.name}'
+                        : 'Picking order not yet assigned',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          CustomButton(
+            label: 'Confirm & Play',
+            icon: Icons.check_circle_outline,
+            isLoading: _isLoading,
+            onPressed: _confirmAndPlay,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CurrentPayoutCard extends StatelessWidget {
@@ -250,14 +564,12 @@ class _CurrentPayoutCard extends StatelessWidget {
     required this.amount,
     required this.icon,
     this.iconColor,
-    this.onWalletTap,
   });
 
   final String label;
   final double amount;
   final IconData icon;
   final Color? iconColor;
-  final VoidCallback? onWalletTap;
 
   @override
   Widget build(BuildContext context) {
@@ -302,35 +614,19 @@ class _CurrentPayoutCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: BalanceText(
-                      amount,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                            height: 1.1,
-                            color: AppColors.darkGray,
-                          ),
-                      iconColor: AppColors.mediumGray,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: BalanceText(
+                amount,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      height: 1.1,
+                      color: AppColors.darkGray,
                     ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: onWalletTap,
-                  child: Icon(
-                    Icons.account_balance_wallet_outlined,
-                    size: 14,
-                    color: AppColors.mediumGray,
-                  ),
-                ),
-              ],
+                iconColor: AppColors.mediumGray,
+              ),
             ),
           ],
         ),
