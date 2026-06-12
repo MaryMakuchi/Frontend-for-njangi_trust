@@ -5,6 +5,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/api_helper.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/njangi_hype.dart';
+import '../../../domain/entities/due_date_entity.dart';
 import '../../../domain/entities/group_entity.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
@@ -15,6 +17,7 @@ import '../../widgets/loading_skeleton.dart';
 import '../../widgets/mri_score_card.dart';
 import '../../widgets/quick_action_chip.dart';
 import '../../widgets/transaction_tile.dart';
+import 'due_dates_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -200,6 +203,8 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
+                  const _UpcomingDueDatesSection(),
+                  const SizedBox(height: 20),
                   Text(
                     'Quick Actions',
                     style: Theme.of(context).textTheme.titleMedium,
@@ -268,6 +273,65 @@ class DashboardScreen extends ConsumerWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => const _PlayNjangiGroupsSheet(),
+    );
+  }
+}
+
+class _UpcomingDueDatesSection extends ConsumerWidget {
+  const _UpcomingDueDatesSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final duesAsync = ref.watch(dueDatesProvider('3m'));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Upcoming Due Dates',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            TextButton(
+              onPressed: () => context.push(AppRoutes.dueDates),
+              child: const Text('View all'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        duesAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('Error: $e',
+                style: Theme.of(context).textTheme.bodySmall),
+          ),
+          data: (dues) {
+            if (dues.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('No upcoming dues 🎉'),
+              );
+            }
+            final sorted = [...dues]
+              ..sort((a, b) => a.dueDatetime.compareTo(b.dueDatetime));
+            final top = sorted.take(2).toList();
+            return Column(
+              children: [
+                for (var i = 0; i < top.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  DueDateTile(due: top[i]),
+                ],
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -410,10 +474,20 @@ class _PlayNjangiConfirmSheet extends ConsumerStatefulWidget {
 class _PlayNjangiConfirmSheetState extends ConsumerState<_PlayNjangiConfirmSheet> {
   bool _isLoading = false;
 
+  // Display label -> source value passed to playNjangi.
+  static const Map<String, String> _sources = {
+    'Wallet': 'wallet',
+    'MoMo': 'momo',
+    'Bank': 'bank',
+  };
+  String _source = 'wallet';
+
   Future<void> _confirmAndPlay() async {
     setState(() => _isLoading = true);
     try {
-      final result = await ref.read(groupRepositoryProvider).playNjangi(widget.group.id);
+      final result = await ref
+          .read(groupRepositoryProvider)
+          .playNjangi(widget.group.id, source: _source);
       ref.invalidate(groupsProvider);
       ref.invalidate(dashboardProvider);
 
@@ -468,6 +542,11 @@ class _PlayNjangiConfirmSheetState extends ConsumerState<_PlayNjangiConfirmSheet
   Widget build(BuildContext context) {
     final group = widget.group;
     final currentPicker = group.currentPicker;
+    final currentUserId = ref.watch(authStateProvider).valueOrNull?.id;
+    final isMyTurn = currentPicker != null &&
+        currentUserId != null &&
+        currentPicker.id == currentUserId;
+    final nextDue = group.nextPlayDue;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -523,29 +602,92 @@ class _PlayNjangiConfirmSheetState extends ConsumerState<_PlayNjangiConfirmSheet
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.schedule, size: 18, color: AppColors.mediumGray),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  nextDue != null
+                      ? 'Due: ${formatDueDateTime(nextDue)} (${relativeDueLabel(nextDue)})'
+                      : 'No schedule set',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.successLight,
-              borderRadius: BorderRadius.circular(12),
+          if (isMyTurn)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: AppColors.goldGradient,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.celebration, color: AppColors.white),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      njangiHypeMessage(),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.successLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.emoji_events_outlined,
+                      color: AppColors.accent, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      currentPicker != null
+                          ? 'Currently picking: ${currentPicker.name}'
+                          : 'Picking order not yet assigned',
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Row(
-              children: [
-                const Icon(Icons.emoji_events_outlined, color: AppColors.accent, size: 20),
-                const SizedBox(width: 8),
+          const SizedBox(height: 16),
+          Text(
+            'Payment source',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (final entry in _sources.entries)
                 Expanded(
-                  child: Text(
-                    currentPicker != null
-                        ? 'Currently picking: ${currentPicker.name}'
-                        : 'Picking order not yet assigned',
+                  child: RadioListTile<String>(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    title: Text(entry.key,
+                        style: Theme.of(context).textTheme.bodySmall),
+                    value: entry.value,
+                    groupValue: _source,
+                    onChanged: (v) => setState(() => _source = v!),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           CustomButton(
             label: 'Confirm & Play',
             icon: Icons.check_circle_outline,

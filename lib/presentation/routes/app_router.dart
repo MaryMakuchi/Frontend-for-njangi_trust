@@ -17,6 +17,7 @@ import '../screens/groups/group_details_screen.dart';
 import '../screens/groups/groups_screen.dart';
 import '../screens/groups/join_group_screen.dart';
 import '../screens/home/dashboard_screen.dart';
+import '../screens/home/due_dates_screen.dart';
 import '../screens/loans/loans_screen.dart';
 import '../screens/loans/request_loan_screen.dart';
 import '../screens/main_shell.dart';
@@ -61,6 +62,7 @@ class AppRoutes {
   static const blockchainLedger = '/blockchain-ledger';
   static const personalInfo = '/personal-info';
   static const walletAccounts = '/wallet-accounts';
+  static const dueDates = '/due-dates';
 }
 
 class _AuthRefreshNotifier extends ChangeNotifier {
@@ -244,6 +246,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.walletAccounts,
         builder: (_, __) => const WalletAccountsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.dueDates,
+        builder: (_, __) => const DueDatesScreen(),
       ),
     ],
     errorBuilder: (_, state) => Scaffold(

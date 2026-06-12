@@ -30,6 +30,52 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
   DateTime _startDate = DateTime.now().add(const Duration(days: 7));
   bool _isLoading = false;
 
+  // Play schedule (optional).
+  static const List<String> _weekdayNames = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+  static const List<String> _weekOfMonthOptions = [
+    'first',
+    'second',
+    'third',
+    'fourth',
+    'last',
+  ];
+  String? _playFrequency; // 'weekly' | 'monthly'
+  int? _playWeekday; // 0=Mon..6=Sun
+  String? _playWeekOfMonth;
+  TimeOfDay? _playDeadlineTime;
+
+  bool get _scheduleStarted =>
+      _playFrequency != null ||
+      _playWeekday != null ||
+      _playWeekOfMonth != null ||
+      _playDeadlineTime != null;
+
+  String? _validateSchedule() {
+    if (!_scheduleStarted) return null;
+    if (_playFrequency == null) return 'Select a play frequency';
+    if (_playWeekday == null) return 'Select a play weekday';
+    if (_playFrequency == 'monthly' && _playWeekOfMonth == null) {
+      return 'Select a week of the month';
+    }
+    return null;
+  }
+
+  String? _deadlineTimeString() {
+    final t = _playDeadlineTime;
+    if (t == null) return null;
+    final h = t.hour.toString().padLeft(2, '0');
+    final m = t.minute.toString().padLeft(2, '0');
+    return '$h:$m:00';
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -50,6 +96,13 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
 
   Future<void> _create() async {
     if (!_formKey.currentState!.validate()) return;
+    final scheduleError = _validateSchedule();
+    if (scheduleError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(scheduleError)),
+      );
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       await ref.read(groupRepositoryProvider).createGroup(
@@ -67,6 +120,11 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 : double.parse(_targetAmountController.text.replaceAll(',', '')),
             durationMonths: int.parse(_durationController.text),
             pickingMode: _pickingMode,
+            playFrequency: _playFrequency,
+            playWeekday: _playWeekday,
+            playWeekOfMonth:
+                _playFrequency == 'monthly' ? _playWeekOfMonth : null,
+            playDeadlineTime: _deadlineTimeString(),
           );
       ref.invalidate(groupsProvider);
       if (mounted) {
@@ -202,6 +260,86 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 'The picking order is assigned once the group reaches its '
                 'maximum number of members.',
                 style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 24),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Play Schedule (optional)',
+                    style: Theme.of(context).textTheme.titleSmall),
+              ),
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Set when members are expected to play (contribute) each cycle.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                value: _playFrequency,
+                decoration: const InputDecoration(labelText: 'Play Frequency'),
+                items: const [
+                  DropdownMenuItem(value: null, child: Text('None')),
+                  DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                  DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+                ],
+                onChanged: (v) => setState(() {
+                  _playFrequency = v;
+                  if (v != 'monthly') _playWeekOfMonth = null;
+                }),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int?>(
+                value: _playWeekday,
+                decoration: const InputDecoration(labelText: 'Play Weekday'),
+                items: [
+                  const DropdownMenuItem<int?>(
+                      value: null, child: Text('Select day')),
+                  for (var i = 0; i < _weekdayNames.length; i++)
+                    DropdownMenuItem<int?>(
+                      value: i,
+                      child: Text(_weekdayNames[i]),
+                    ),
+                ],
+                onChanged: (v) => setState(() => _playWeekday = v),
+              ),
+              if (_playFrequency == 'monthly') ...[
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String?>(
+                  value: _playWeekOfMonth,
+                  decoration:
+                      const InputDecoration(labelText: 'Week of Month'),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                        value: null, child: Text('Select week')),
+                    for (final w in _weekOfMonthOptions)
+                      DropdownMenuItem<String?>(
+                        value: w,
+                        child: Text('${w[0].toUpperCase()}${w.substring(1)}'),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _playWeekOfMonth = v),
+                ),
+              ],
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Deadline Time'),
+                subtitle: Text(
+                  _playDeadlineTime == null
+                      ? 'Not set'
+                      : _playDeadlineTime!.format(context),
+                ),
+                trailing: const Icon(Icons.access_time),
+                onTap: () async {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime:
+                        _playDeadlineTime ?? const TimeOfDay(hour: 18, minute: 0),
+                  );
+                  if (time != null) setState(() => _playDeadlineTime = time);
+                },
               ),
               const SizedBox(height: 16),
               CustomTextField(
