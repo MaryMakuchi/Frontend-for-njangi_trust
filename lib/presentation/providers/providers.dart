@@ -11,7 +11,10 @@ import '../../data/repositories/transaction_repository_impl.dart';
 import '../../data/repositories/wallet_repository_impl.dart';
 import '../../domain/entities/contribution_entity.dart';
 import '../../domain/entities/dashboard_entity.dart';
+import '../../domain/entities/due_date_entity.dart';
 import '../../domain/entities/group_entity.dart';
+import '../../domain/entities/group_preview_entity.dart';
+import '../../domain/entities/mri_entity.dart';
 import '../../domain/entities/group_message_entity.dart';
 import '../../domain/entities/linked_account_entity.dart';
 import '../../domain/entities/loan_entity.dart';
@@ -225,6 +228,31 @@ final groupSearchResultsProvider =
   final query = ref.watch(groupSearchQueryProvider);
   if (query.trim().isEmpty) return Future.value(const []);
   return ref.watch(groupRepositoryProvider).searchGroups(query);
+});
+
+// Due dates, keyed by horizon ("3m"|"6m"|"12m"|"all")
+final dueDatesProvider =
+    FutureProvider.family<List<DueDateEntity>, String>((ref, horizon) {
+  return ref.watch(groupRepositoryProvider).getDueDates(horizon: horizon);
+});
+
+// Public group preview, keyed by groupId
+final groupPreviewProvider =
+    FutureProvider.family<GroupPreviewEntity, String>((ref, groupId) {
+  return ref.watch(groupRepositoryProvider).getGroupPreview(groupId);
+});
+
+// Group ledger, keyed by ({groupId, category}) record
+final groupLedgerProvider = FutureProvider.family<List<TransactionEntity>,
+    ({String groupId, String category})>((ref, params) {
+  return ref
+      .watch(groupRepositoryProvider)
+      .getGroupLedger(params.groupId, category: params.category);
+});
+
+// MRI score history for the current user
+final mriHistoryProvider = FutureProvider<MriHistoryEntity>((ref) {
+  return ref.watch(authRepositoryProvider).getMriHistory();
 });
 
 // Onboarding flag

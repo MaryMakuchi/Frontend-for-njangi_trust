@@ -138,6 +138,11 @@ class GroupEntity extends Equatable {
     this.endDate,
     this.currentPicker,
     this.rotationStarted = false,
+    this.playFrequency,
+    this.playWeekday,
+    this.playWeekOfMonth,
+    this.playDeadlineTime,
+    this.nextPlayDue,
   });
 
   final String id;
@@ -163,6 +168,11 @@ class GroupEntity extends Equatable {
   final DateTime? endDate;
   final CurrentPickerEntity? currentPicker;
   final bool rotationStarted;
+  final String? playFrequency;
+  final int? playWeekday;
+  final String? playWeekOfMonth;
+  final String? playDeadlineTime;
+  final DateTime? nextPlayDue;
 
   DateTime get effectiveEndDate =>
       endDate ?? DateTime(startDate.year, startDate.month + durationMonths, startDate.day);
@@ -192,5 +202,10 @@ class GroupEntity extends Equatable {
         endDate,
         currentPicker,
         rotationStarted,
+        playFrequency,
+        playWeekday,
+        playWeekOfMonth,
+        playDeadlineTime,
+        nextPlayDue,
       ];
 }

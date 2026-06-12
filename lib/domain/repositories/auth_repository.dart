@@ -1,3 +1,4 @@
+import '../entities/mri_entity.dart';
 import '../entities/user_entity.dart';
 
 abstract class AuthRepository {
@@ -22,4 +23,5 @@ abstract class AuthRepository {
   Future<void> logout();
   Future<UserEntity?> getCurrentUser();
   Future<bool> isAuthenticated();
+  Future<MriHistoryEntity> getMriHistory();
 }

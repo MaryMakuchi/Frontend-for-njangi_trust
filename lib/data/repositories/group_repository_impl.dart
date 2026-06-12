@@ -1,18 +1,24 @@
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/utils/api_helper.dart';
+import '../../domain/entities/due_date_entity.dart';
 import '../../domain/entities/group_entity.dart';
 import '../../domain/entities/group_message_entity.dart';
+import '../../domain/entities/group_preview_entity.dart';
 import '../../domain/entities/membership_request_entity.dart';
 import '../../domain/entities/savings_entity.dart';
 import '../../domain/entities/social_fund_entity.dart';
+import '../../domain/entities/transaction_entity.dart';
 import '../../domain/repositories/group_repository.dart';
 import '../datasources/mock_data.dart';
+import '../models/due_date_model.dart';
 import '../models/group_message_model.dart';
 import '../models/group_model.dart';
+import '../models/group_preview_model.dart';
 import '../models/membership_request_model.dart';
 import '../models/savings_model.dart';
 import '../models/social_fund_model.dart';
+import '../models/transaction_model.dart';
 
 class GroupRepositoryImpl implements GroupRepository {
   GroupRepositoryImpl({ApiService? api}) : _api = api ?? ApiService();
@@ -50,6 +56,10 @@ class GroupRepositoryImpl implements GroupRepository {
     double? targetAmount,
     int durationMonths = 12,
     String pickingMode = 'random',
+    String? playFrequency,
+    int? playWeekday,
+    String? playWeekOfMonth,
+    String? playDeadlineTime,
   }) async {
     if (AppConstants.useMockData) {
       return GroupEntity(
@@ -67,6 +77,10 @@ class GroupRepositoryImpl implements GroupRepository {
         targetAmount: targetAmount,
         durationMonths: durationMonths,
         pickingMode: pickingMode,
+        playFrequency: playFrequency,
+        playWeekday: playWeekday,
+        playWeekOfMonth: playWeekOfMonth,
+        playDeadlineTime: playDeadlineTime,
       );
     }
 
@@ -82,6 +96,12 @@ class GroupRepositoryImpl implements GroupRepository {
         if (targetAmount != null) 'target_amount': targetAmount,
         'duration_months': durationMonths,
         'picking_mode': pickingMode,
+        ...GroupModel.scheduleToJson(
+          playFrequency: playFrequency,
+          playWeekday: playWeekday,
+          playWeekOfMonth: playWeekOfMonth,
+          playDeadlineTime: playDeadlineTime,
+        ),
       },
     );
     return GroupModel.fromJson(parseJsonResponse(response));
@@ -141,15 +161,18 @@ class GroupRepositoryImpl implements GroupRepository {
   Future<GroupEntity> updateGroupSettings({
     required String groupId,
     int? maxMembers,
+    String? playFrequency,
+    int? playWeekday,
+    String? playWeekOfMonth,
+    String? playDeadlineTime,
   }) async {
     if (AppConstants.useMockData) {
       final group = MockData.groups.firstWhere((g) => g.id == groupId);
-      if (maxMembers == null) return group;
       return GroupEntity(
         id: group.id,
         name: group.name,
         memberCount: group.memberCount,
-        maxMembers: maxMembers,
+        maxMembers: maxMembers ?? group.maxMembers,
         contributionAmount: group.contributionAmount,
         frequency: group.frequency,
         fundBalance: group.fundBalance,
@@ -175,13 +198,22 @@ class GroupRepositoryImpl implements GroupRepository {
       '/groups/$groupId/',
       body: {
         if (maxMembers != null) 'max_members': maxMembers,
+        ...GroupModel.scheduleToJson(
+          playFrequency: playFrequency,
+          playWeekday: playWeekday,
+          playWeekOfMonth: playWeekOfMonth,
+          playDeadlineTime: playDeadlineTime,
+        ),
       },
     );
     return GroupModel.fromJson(parseJsonResponse(response));
   }
 
   @override
-  Future<PlayNjangiResultEntity> playNjangi(String groupId) async {
+  Future<PlayNjangiResultEntity> playNjangi(
+    String groupId, {
+    String source = 'wallet',
+  }) async {
     if (AppConstants.useMockData) {
       final group = MockData.groups.firstWhere((g) => g.id == groupId);
       return PlayNjangiResultEntity(
@@ -193,8 +225,71 @@ class GroupRepositoryImpl implements GroupRepository {
       );
     }
 
-    final response = await _api.post('/groups/$groupId/play/', body: const {});
+    final response = await _api.post(
+      '/groups/$groupId/play/',
+      body: {'source': source},
+    );
     return PlayNjangiResultModel.fromJson(parseJsonResponse(response));
+  }
+
+  @override
+  Future<List<DueDateEntity>> getDueDates({String horizon = '3m'}) async {
+    if (AppConstants.useMockData) {
+      final now = DateTime.now();
+      return [
+        DueDateEntity(
+          type: 'njangi',
+          label: 'Njangi - Family Savings',
+          groupId: 'grp_mock',
+          groupName: 'Family Savings',
+          amount: 5000,
+          dueDatetime: now.add(const Duration(days: 3)),
+        ),
+      ];
+    }
+
+    final response = await _api.get('/groups/due-dates/?horizon=$horizon');
+    final json = parseJsonResponse(response);
+    final list = json['due_dates'] as List? ?? const [];
+    return list
+        .map((e) => DueDateModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<GroupPreviewEntity> getGroupPreview(String groupId) async {
+    if (AppConstants.useMockData) {
+      final group = MockData.groups.firstWhere((g) => g.id == groupId);
+      return GroupPreviewEntity(
+        id: group.id,
+        name: group.name,
+        rules: group.rules,
+        contributionAmount: group.contributionAmount,
+        maxMembers: group.maxMembers,
+        memberCount: group.memberCount,
+        playFrequency: group.playFrequency,
+        nextPlayDue: group.nextPlayDue,
+        presidentName: null,
+        isMember: false,
+        hasPendingRequest: false,
+      );
+    }
+
+    final response = await _api.get('/groups/$groupId/preview/');
+    return GroupPreviewModel.fromJson(parseJsonResponse(response));
+  }
+
+  @override
+  Future<List<TransactionEntity>> getGroupLedger(
+    String groupId, {
+    String category = 'all',
+  }) async {
+    if (AppConstants.useMockData) return [];
+
+    final response = await _api.get('/groups/$groupId/ledger/?category=$category');
+    return parseListResponse(response)
+        .map((e) => TransactionModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   @override
@@ -348,6 +443,7 @@ class GroupRepositoryImpl implements GroupRepository {
   Future<SavingsSummaryEntity> depositToGroupSavings({
     required String groupId,
     required double amount,
+    String source = 'wallet',
   }) async {
     if (AppConstants.useMockData) {
       return SavingsSummaryEntity(
@@ -360,7 +456,7 @@ class GroupRepositoryImpl implements GroupRepository {
 
     final response = await _api.post(
       '/groups/$groupId/savings/deposit/',
-      body: {'amount': amount.toStringAsFixed(2)},
+      body: {'amount': amount.toStringAsFixed(2), 'source': source},
     );
     final json = parseJsonResponse(response);
     final mySavings = json['my_savings'] as Map<String, dynamic>? ?? json;

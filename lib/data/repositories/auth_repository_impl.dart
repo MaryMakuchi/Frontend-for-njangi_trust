@@ -2,9 +2,11 @@ import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/secure_storage_service.dart';
 import '../../core/utils/api_helper.dart';
+import '../../domain/entities/mri_entity.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/mock_data.dart';
+import '../models/mri_model.dart';
 import '../models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -171,6 +173,26 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<bool> isAuthenticated() async {
     return (await _storage.getToken()) != null;
+  }
+
+  @override
+  Future<MriHistoryEntity> getMriHistory() async {
+    if (AppConstants.useMockData) {
+      return MriHistoryEntity(
+        mriScore: 7.5,
+        events: [
+          MriEventEntity(
+            delta: -0.5,
+            reason: 'missed_contribution',
+            description: 'Missed a contribution deadline',
+            createdAt: DateTime.now().subtract(const Duration(days: 2)),
+          ),
+        ],
+      );
+    }
+
+    final response = await _api.get('/accounts/mri-history/');
+    return MriHistoryModel.fromJson(parseJsonResponse(response));
   }
 
   Future<UserEntity> _mockLogin({String? email, String? phone}) async {

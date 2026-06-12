@@ -30,7 +30,28 @@ class GroupModel {
           ? CurrentPickerModel.fromJson(json['current_picker'] as Map<String, dynamic>)
           : null,
       rotationStarted: json['rotation_started'] as bool? ?? false,
+      playFrequency: json['play_frequency'] as String?,
+      playWeekday: json['play_weekday'] != null ? parseInt(json['play_weekday']) : null,
+      playWeekOfMonth: json['play_week_of_month'] as String?,
+      playDeadlineTime: json['play_deadline_time'] as String?,
+      nextPlayDue: parseDateTime(json['next_play_due']),
     );
+  }
+
+  /// Serializes the schedule fields for create/patch payloads. Only includes
+  /// fields that are non-null so callers can send partial updates.
+  static Map<String, dynamic> scheduleToJson({
+    String? playFrequency,
+    int? playWeekday,
+    String? playWeekOfMonth,
+    String? playDeadlineTime,
+  }) {
+    return {
+      if (playFrequency != null) 'play_frequency': playFrequency,
+      if (playWeekday != null) 'play_weekday': playWeekday,
+      if (playWeekOfMonth != null) 'play_week_of_month': playWeekOfMonth,
+      if (playDeadlineTime != null) 'play_deadline_time': playDeadlineTime,
+    };
   }
 }
 

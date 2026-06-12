@@ -1,8 +1,11 @@
+import '../entities/due_date_entity.dart';
 import '../entities/group_entity.dart';
 import '../entities/group_message_entity.dart';
+import '../entities/group_preview_entity.dart';
 import '../entities/membership_request_entity.dart';
 import '../entities/savings_entity.dart';
 import '../entities/social_fund_entity.dart';
+import '../entities/transaction_entity.dart';
 
 abstract class GroupRepository {
   Future<List<GroupEntity>> getGroups();
@@ -17,6 +20,10 @@ abstract class GroupRepository {
     double? targetAmount,
     int durationMonths = 12,
     String pickingMode = 'random',
+    String? playFrequency,
+    int? playWeekday,
+    String? playWeekOfMonth,
+    String? playDeadlineTime,
   });
   Future<String> joinGroup({String? invitationCode, String? groupId});
   Future<List<GroupSearchResultEntity>> searchGroups(String query);
@@ -28,8 +35,17 @@ abstract class GroupRepository {
   Future<GroupEntity> updateGroupSettings({
     required String groupId,
     int? maxMembers,
+    String? playFrequency,
+    int? playWeekday,
+    String? playWeekOfMonth,
+    String? playDeadlineTime,
   });
-  Future<PlayNjangiResultEntity> playNjangi(String groupId);
+  Future<PlayNjangiResultEntity> playNjangi(String groupId, {String source = 'wallet'});
+
+  // Schedule, due dates, preview & ledger
+  Future<List<DueDateEntity>> getDueDates({String horizon = '3m'});
+  Future<GroupPreviewEntity> getGroupPreview(String groupId);
+  Future<List<TransactionEntity>> getGroupLedger(String groupId, {String category = 'all'});
   Future<List<SocialFundEntity>> getSocialFunds(String groupId);
   Future<SocialFundEntity> createSocialFund({
     required String groupId,
@@ -61,6 +77,7 @@ abstract class GroupRepository {
   Future<SavingsSummaryEntity> depositToGroupSavings({
     required String groupId,
     required double amount,
+    String source = 'wallet',
   });
   Future<SavingsWithdrawalResultEntity> withdrawGroupSavings(String groupId);
   Future<void> closeSavingsPeriod(String groupId);
