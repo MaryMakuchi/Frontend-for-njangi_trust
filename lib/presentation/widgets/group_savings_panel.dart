@@ -403,63 +403,9 @@ class _ActivePeriodView extends ConsumerWidget {
   }
 
   void _showDepositDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
-    bool isLoading = false;
-
     showDialog(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setState) => AlertDialog(
-          title: const Text('Deposit to Savings'),
-          content: CustomTextField(
-            label: 'Amount (CFA)',
-            controller: controller,
-            keyboardType: TextInputType.number,
-            inputFormatters: [ThousandsSeparatorInputFormatter()],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: isLoading
-                  ? null
-                  : () async {
-                      final amount =
-                          double.tryParse(controller.text.replaceAll(',', ''));
-                      if (amount == null || amount <= 0) return;
-                      setState(() => isLoading = true);
-                      try {
-                        await ref.read(groupRepositoryProvider).depositToGroupSavings(
-                              groupId: groupId,
-                              amount: amount,
-                            );
-                        ref.invalidate(groupSavingsProvider(groupId));
-                        ref.invalidate(dashboardProvider);
-                        if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-                      } catch (e) {
-                        setState(() => isLoading = false);
-                        if (dialogContext.mounted) {
-                          final message = e is ApiException
-                              ? e.message
-                              : AppStrings.genericError;
-                          ScaffoldMessenger.of(dialogContext)
-                              .showSnackBar(SnackBar(content: Text(message)));
-                        }
-                      }
-                    },
-              child: isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Deposit'),
-            ),
-          ],
-        ),
-      ),
+      builder: (dialogContext) => _DepositDialog(groupId: groupId),
     );
   }
 
@@ -496,6 +442,138 @@ class _ActivePeriodView extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Deposit dialog with a "Deposit from" source selector
+/// (Wallet / MoMo / Bank). For momo/bank the backend collects the funds
+/// from the chosen channel, so the wallet balance is not used.
+class _DepositDialog extends ConsumerStatefulWidget {
+  const _DepositDialog({required this.groupId});
+
+  final String groupId;
+
+  @override
+  ConsumerState<_DepositDialog> createState() => _DepositDialogState();
+}
+
+class _DepositDialogState extends ConsumerState<_DepositDialog> {
+  final _controller = TextEditingController();
+  String _source = 'wallet';
+  bool _isLoading = false;
+
+  static const _sources = [
+    (value: 'wallet', label: 'Wallet', icon: Icons.account_balance_wallet_outlined),
+    (value: 'momo', label: 'Mobile Money', icon: Icons.phone_android),
+    (value: 'bank', label: 'Bank', icon: Icons.account_balance_outlined),
+  ];
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final amount = double.tryParse(_controller.text.replaceAll(',', ''));
+    if (amount == null || amount <= 0) return;
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(groupRepositoryProvider).depositToGroupSavings(
+            groupId: widget.groupId,
+            amount: amount,
+            source: _source,
+          );
+      ref.invalidate(groupSavingsProvider(widget.groupId));
+      ref.invalidate(dashboardProvider);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        final message = e is ApiException ? e.message : AppStrings.genericError;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notWallet = _source != 'wallet';
+    return AlertDialog(
+      title: const Text('Deposit to Savings'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CustomTextField(
+              label: 'Amount (CFA)',
+              controller: _controller,
+              keyboardType: TextInputType.number,
+              inputFormatters: [ThousandsSeparatorInputFormatter()],
+            ),
+            const SizedBox(height: 16),
+            Text('Deposit from', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            ..._sources.map(
+              (s) => Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                color: _source == s.value
+                    ? AppColors.primary.withValues(alpha: 0.08)
+                    : null,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(
+                    color: _source == s.value
+                        ? AppColors.primary
+                        : AppColors.border,
+                  ),
+                ),
+                child: RadioListTile<String>(
+                  value: s.value,
+                  groupValue: _source,
+                  onChanged: _isLoading
+                      ? null
+                      : (v) => setState(() => _source = v ?? 'wallet'),
+                  title: Text(s.label),
+                  secondary: Icon(s.icon),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 8),
+                  dense: true,
+                ),
+              ),
+            ),
+            if (notWallet)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  _source == 'momo'
+                      ? 'Funds collected from your Mobile Money.'
+                      : 'Funds collected from your Bank.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _isLoading ? null : _submit,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Deposit'),
+        ),
+      ],
     );
   }
 }

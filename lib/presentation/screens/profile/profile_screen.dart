@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/utils/formatters.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
+import 'mri_history_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -81,6 +83,8 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          _MriScoreBanner(score: user?.mriScore ?? 0),
           const SizedBox(height: 24),
           _MenuItem(
             icon: Icons.person_outline,
@@ -121,6 +125,13 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () => context.push(AppRoutes.mriScore),
           ),
           _MenuItem(
+            icon: Icons.history,
+            title: 'MRI History',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MriHistoryScreen()),
+            ),
+          ),
+          _MenuItem(
             icon: Icons.link,
             title: 'Blockchain Ledger',
             onTap: () => context.push(AppRoutes.blockchainLedger),
@@ -146,6 +157,50 @@ class ProfileScreen extends ConsumerWidget {
               await ref.read(authStateProvider.notifier).logout();
               if (context.mounted) context.go(AppRoutes.login);
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MriScoreBanner extends StatelessWidget {
+  const _MriScoreBanner({required this.score});
+
+  final double score;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.shield_outlined, color: AppColors.white, size: 32),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'MRI Reliability Score',
+                  style: TextStyle(color: AppColors.white),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${Formatters.mriScore(score)} / 10',
+                  style: const TextStyle(
+                    color: AppColors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

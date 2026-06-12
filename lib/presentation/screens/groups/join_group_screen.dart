@@ -4,13 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
-import '../../../core/utils/api_helper.dart';
 import '../../../core/utils/validators.dart';
 import '../../../domain/entities/group_entity.dart';
 import '../../providers/providers.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import 'group_preview_screen.dart';
 
 class JoinGroupScreen extends ConsumerStatefulWidget {
   const JoinGroupScreen({super.key});
@@ -153,84 +152,56 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
   }
 }
 
-class _GroupSearchResultTile extends ConsumerStatefulWidget {
+class _GroupSearchResultTile extends StatelessWidget {
   const _GroupSearchResultTile({required this.group});
 
   final GroupSearchResultEntity group;
 
-  @override
-  ConsumerState<_GroupSearchResultTile> createState() => _GroupSearchResultTileState();
-}
-
-class _GroupSearchResultTileState extends ConsumerState<_GroupSearchResultTile> {
-  bool _isLoading = false;
-  bool _requested = false;
-
-  Future<void> _requestToJoin() async {
-    setState(() => _isLoading = true);
-    try {
-      final detail = await ref.read(groupRepositoryProvider).joinGroup(
-            groupId: widget.group.id,
-          );
-      if (mounted) {
-        setState(() => _requested = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(detail)),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        final message = e is ApiException ? e.message : AppStrings.genericError;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  void _openPreview(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => GroupPreviewScreen(groupId: group.id),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final group = widget.group;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.purpleSurface,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _openPreview(context),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
               children: [
-                Text(group.name, style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 4),
-                Text(
-                  '${group.memberCount}/${group.maxMembers} members',
-                  style: Theme.of(context).textTheme.bodySmall,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(group.name,
+                          style: Theme.of(context).textTheme.titleSmall),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${group.memberCount}/${group.maxMembers} members',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 12),
+                const Icon(Icons.chevron_right),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          SizedBox(
-            height: 40,
-            child: _isLoading
-                ? const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  )
-                : ElevatedButton(
-                    onPressed: _requested ? null : _requestToJoin,
-                    child: Text(_requested ? 'Requested' : 'Request to Join'),
-                  ),
-          ),
-        ],
+        ),
       ),
     );
   }
