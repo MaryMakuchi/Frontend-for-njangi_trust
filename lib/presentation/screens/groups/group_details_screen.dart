@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/api_helper.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/input_formatters.dart';
+import '../../../core/utils/njangi_hype.dart';
 import '../../../domain/entities/group_entity.dart';
 import '../../../domain/entities/membership_request_entity.dart';
 import '../../../domain/entities/social_fund_entity.dart';
+import '../../../domain/entities/transaction_entity.dart';
 import '../../providers/providers.dart';
 import '../../widgets/balance_text.dart';
 import '../../widgets/custom_button.dart';
@@ -57,7 +60,7 @@ class GroupDetailsScreen extends ConsumerWidget {
                       _OverviewTab(group: group),
                       _MembersTab(group: group),
                       _SocialFundTab(group: group),
-                      const Center(child: Text('Ledger coming soon')),
+                      _LedgerTab(group: group),
                       _SavingsTab(group: group),
                       const Center(child: Text('Group loans coming soon')),
                       _ChatTab(group: group),
@@ -178,11 +181,20 @@ class _PlayNjangiSheet extends ConsumerStatefulWidget {
 
 class _PlayNjangiSheetState extends ConsumerState<_PlayNjangiSheet> {
   bool _isLoading = false;
+  String _source = 'wallet';
+
+  static const _paymentSources = [
+    ('wallet', 'Wallet', Icons.account_balance_wallet_outlined),
+    ('momo', 'MoMo', Icons.phone_android_outlined),
+    ('bank', 'Bank', Icons.account_balance_outlined),
+  ];
 
   Future<void> _confirmAndPlay() async {
     setState(() => _isLoading = true);
     try {
-      final result = await ref.read(groupRepositoryProvider).playNjangi(widget.group.id);
+      final result = await ref
+          .read(groupRepositoryProvider)
+          .playNjangi(widget.group.id, source: _source);
       ref.invalidate(groupsProvider);
       ref.invalidate(dashboardProvider);
 
@@ -237,6 +249,10 @@ class _PlayNjangiSheetState extends ConsumerState<_PlayNjangiSheet> {
   Widget build(BuildContext context) {
     final group = widget.group;
     final currentPicker = group.currentPicker;
+    final currentUser = ref.watch(authStateProvider).valueOrNull;
+    final isMyTurn =
+        currentPicker != null && currentUser != null && currentPicker.id == currentUser.id;
+    final nextPlayDue = group.nextPlayDue;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -292,26 +308,106 @@ class _PlayNjangiSheetState extends ConsumerState<_PlayNjangiSheet> {
             ),
           ),
           const SizedBox(height: 16),
+          Row(
+            children: [
+              const Icon(Icons.schedule, size: 18, color: AppColors.mediumGray),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  nextPlayDue != null
+                      ? '${formatDueDateTime(nextPlayDue)} · ${relativeDueLabel(nextPlayDue)}'
+                      : 'No schedule set',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.successLight,
+              color: isMyTurn ? AppColors.successLight : AppColors.purpleSurface,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                const Icon(Icons.emoji_events_outlined, color: AppColors.accent, size: 20),
+                Icon(
+                  isMyTurn ? Icons.celebration : Icons.emoji_events_outlined,
+                  color: isMyTurn ? AppColors.accent : AppColors.purple,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    currentPicker != null
-                        ? 'Currently picking: ${currentPicker.name}'
-                        : 'Picking order not yet assigned',
+                    isMyTurn
+                        ? njangiHypeMessage()
+                        : currentPicker != null
+                            ? 'Currently picking: ${currentPicker.name}'
+                            : 'Picking order not yet assigned',
+                    style: isMyTurn
+                        ? const TextStyle(fontWeight: FontWeight.w700)
+                        : null,
                   ),
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Pay from',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (final source in _paymentSources) ...[
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _isLoading ? null : () => setState(() => _source = source.$1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _source == source.$1
+                            ? AppColors.primary.withValues(alpha: 0.12)
+                            : AppColors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _source == source.$1
+                              ? AppColors.primary
+                              : AppColors.border,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            source.$3,
+                            size: 22,
+                            color: _source == source.$1
+                                ? AppColors.primary
+                                : AppColors.mediumGray,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            source.$2,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: _source == source.$1
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                              color: _source == source.$1
+                                  ? AppColors.primary
+                                  : AppColors.mediumGray,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (source != _paymentSources.last) const SizedBox(width: 8),
+              ],
+            ],
           ),
           const SizedBox(height: 20),
           CustomButton(
@@ -393,10 +489,6 @@ class _OverviewTab extends ConsumerWidget {
               label: const Text('Edit group settings'),
             ),
           ),
-        if (isPresident) ...[
-          _PendingMembershipRequests(group: group),
-          const SizedBox(height: 8),
-        ],
         _InfoRow(
           'Contribution',
           Formatters.currency(group.contributionAmount),
@@ -557,8 +649,10 @@ class _OverviewTab extends ConsumerWidget {
   }
 }
 
-class _PendingMembershipRequests extends ConsumerWidget {
-  const _PendingMembershipRequests({required this.group});
+/// Pending join requests rendered in the Members tab (presidents only),
+/// styled like member rows but marked "Pending" with Accept/Reject actions.
+class _PendingRequestsSection extends ConsumerWidget {
+  const _PendingRequestsSection({required this.group});
 
   final GroupEntity group;
 
@@ -572,25 +666,23 @@ class _PendingMembershipRequests extends ConsumerWidget {
       data: (requests) {
         if (requests.isEmpty) return const SizedBox.shrink();
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.purpleSurface,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Pending Membership Requests',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              for (final request in requests)
-                _MembershipRequestTile(group: group, request: request),
-            ],
-          ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Pending Requests',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 4),
+            for (final request in requests)
+              _MembershipRequestTile(group: group, request: request),
+            const SizedBox(height: 8),
+            Text(
+              'Members',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 4),
+          ],
         );
       },
     );
@@ -632,9 +724,30 @@ class _MembershipRequestTileState extends ConsumerState<_MembershipRequestTile> 
 
   @override
   Widget build(BuildContext context) {
+    final name = widget.request.userName;
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(widget.request.userName),
+      leading: CircleAvatar(
+        backgroundColor: AppColors.mediumGray.withValues(alpha: 0.2),
+        child: Text(name.isNotEmpty ? name[0] : '?'),
+      ),
+      title: Row(
+        children: [
+          Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.mediumGray.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              'Pending',
+              style: TextStyle(fontSize: 10, color: AppColors.mediumGray),
+            ),
+          ),
+        ],
+      ),
       trailing: _isLoading
           ? const SizedBox(
               width: 16,
@@ -645,10 +758,12 @@ class _MembershipRequestTileState extends ConsumerState<_MembershipRequestTile> 
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
+                  tooltip: 'Accept',
                   icon: const Icon(Icons.check_circle, color: AppColors.success),
                   onPressed: () => _respond('accept'),
                 ),
                 IconButton(
+                  tooltip: 'Reject',
                   icon: const Icon(Icons.cancel, color: AppColors.error),
                   onPressed: () => _respond('reject'),
                 ),
@@ -831,20 +946,36 @@ class _PickingOrderActionsState extends ConsumerState<_PickingOrderActions> {
   }
 }
 
-class _MembersTab extends StatelessWidget {
+class _MembersTab extends ConsumerWidget {
   const _MembersTab({required this.group});
 
   final GroupEntity group;
 
+  bool _isPresident(WidgetRef ref) {
+    final user = ref.watch(authStateProvider).valueOrNull;
+    if (user == null) return false;
+    final membership = group.members.where((m) => m.id == user.id);
+    return membership.isNotEmpty && membership.first.role == GroupRole.president;
+  }
+
   @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isPresident = _isPresident(ref);
+
+    return ListView(
       padding: const EdgeInsets.all(16),
-      itemCount: group.members.length,
-      separatorBuilder: (_, __) => const Divider(),
-      itemBuilder: (_, i) {
-        final member = group.members[i];
-        return ListTile(
+      children: [
+        if (isPresident) _PendingRequestsSection(group: group),
+        for (var i = 0; i < group.members.length; i++) ...[
+          if (i > 0) const Divider(),
+          _buildMemberTile(context, group.members[i]),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildMemberTile(BuildContext context, GroupMemberEntity member) {
+    return ListTile(
           leading: CircleAvatar(
             backgroundColor: member.isCurrentBeneficiary
                 ? AppColors.accent.withValues(alpha: 0.2)
@@ -883,8 +1014,6 @@ class _MembersTab extends StatelessWidget {
             ),
           ),
         );
-      },
-    );
   }
 
   String _roleLabel(GroupRole role) {
@@ -1189,6 +1318,179 @@ class _SocialFundCardState extends ConsumerState<_SocialFundCard> {
                 title: Text(c.userName),
                 subtitle: Text(Formatters.date(c.createdAt)),
                 trailing: BalanceText(c.amount),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LedgerTab extends ConsumerStatefulWidget {
+  const _LedgerTab({required this.group});
+
+  final GroupEntity group;
+
+  @override
+  ConsumerState<_LedgerTab> createState() => _LedgerTabState();
+}
+
+class _LedgerTabState extends ConsumerState<_LedgerTab> {
+  static const _categories = [
+    ('all', 'All'),
+    ('njangi', 'Njangi'),
+    ('savings', 'Savings'),
+    ('loans', 'Loans'),
+    ('social_fund', 'Social Fund'),
+  ];
+
+  String _category = 'all';
+
+  @override
+  Widget build(BuildContext context) {
+    final ledgerAsync = ref.watch(
+      groupLedgerProvider((groupId: widget.group.id, category: _category)),
+    );
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: DropdownButtonFormField<String>(
+            initialValue: _category,
+            decoration: const InputDecoration(
+              labelText: 'Category',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: [
+              for (final c in _categories)
+                DropdownMenuItem(value: c.$1, child: Text(c.$2)),
+            ],
+            onChanged: (value) {
+              if (value != null) setState(() => _category = value);
+            },
+          ),
+        ),
+        Expanded(
+          child: ledgerAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error: $e')),
+            data: (transactions) {
+              if (transactions.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text('No transactions in this category yet'),
+                  ),
+                );
+              }
+              return RefreshIndicator(
+                onRefresh: () async => ref.invalidate(
+                  groupLedgerProvider(
+                    (groupId: widget.group.id, category: _category),
+                  ),
+                ),
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: transactions.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) => _LedgerTile(transaction: transactions[i]),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LedgerTile extends StatelessWidget {
+  const _LedgerTile({required this.transaction});
+
+  final TransactionEntity transaction;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = transaction;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(t.title, style: Theme.of(context).textTheme.titleSmall),
+              ),
+              if (t.onChain)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.successLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.verified, size: 14, color: AppColors.success),
+                      SizedBox(width: 4),
+                      Text(
+                        'On-chain',
+                        style: TextStyle(
+                          color: AppColors.success,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${t.isCredit ? '+' : '-'}${Formatters.currency(t.amount)}',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: t.isCredit ? AppColors.success : AppColors.error,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            Formatters.dateTime(t.date),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          if (t.onChain && t.explorerUrl != null) ...[
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => launchUrl(
+                Uri.parse(t.explorerUrl!),
+                mode: LaunchMode.externalApplication,
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.link, size: 14, color: AppColors.purple),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      t.hash ?? 'View on explorer',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontFamily: 'monospace',
+                            color: AppColors.purple,
+                            decoration: TextDecoration.underline,
+                          ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const Icon(Icons.open_in_new, size: 14, color: AppColors.purple),
+                ],
               ),
             ),
           ],
