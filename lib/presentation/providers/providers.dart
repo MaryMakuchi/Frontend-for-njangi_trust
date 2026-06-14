@@ -177,6 +177,11 @@ final notificationsProvider = FutureProvider<List<NotificationEntity>>((ref) {
   return ref.watch(notificationRepositoryProvider).getNotifications();
 });
 
+// Unread notification count, drives the badge on the notifications icon.
+final unreadNotificationCountProvider = FutureProvider<int>((ref) {
+  return ref.watch(notificationRepositoryProvider).getUnreadCount();
+});
+
 final maxLoanAmountProvider = FutureProvider<double>((ref) {
   return ref.watch(loanRepositoryProvider).getMaxEligibleAmount();
 });

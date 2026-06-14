@@ -22,6 +22,10 @@ class NotificationsScreen extends ConsumerWidget {
         return Icons.event;
       case NotificationType.groupAnnouncement:
         return Icons.campaign_outlined;
+      case NotificationType.mriUpdate:
+        return Icons.trending_down;
+      case NotificationType.membershipRequest:
+        return Icons.person_add_alt_1_outlined;
     }
   }
 
@@ -29,7 +33,11 @@ class NotificationsScreen extends ConsumerWidget {
     switch (n.targetType) {
       case 'group':
         if (n.targetId.isNotEmpty) {
-          context.push('${AppRoutes.groups}/${n.targetId}');
+          // Deep-link into a specific tab (e.g. Members) when the notification
+          // names one, otherwise open the group at its default tab.
+          final tabQuery =
+              n.targetView.isNotEmpty ? '?tab=${n.targetView}' : '';
+          context.push('${AppRoutes.groups}/${n.targetId}$tabQuery');
         }
         break;
       case 'loan':
@@ -48,7 +56,20 @@ class NotificationsScreen extends ConsumerWidget {
     final notificationsAsync = ref.watch(notificationsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: AppBar(
+        title: const Text('Notifications'),
+        actions: [
+          TextButton.icon(
+            onPressed: () async {
+              await ref.read(notificationRepositoryProvider).markAllAsRead();
+              ref.invalidate(notificationsProvider);
+              ref.invalidate(unreadNotificationCountProvider);
+            },
+            icon: const Icon(Icons.done_all, size: 18),
+            label: const Text('Read All'),
+          ),
+        ],
+      ),
       body: notificationsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -88,6 +109,7 @@ class NotificationsScreen extends ConsumerWidget {
               onTap: () {
                 ref.read(notificationRepositoryProvider).markAsRead(n.id);
                 ref.invalidate(notificationsProvider);
+                ref.invalidate(unreadNotificationCountProvider);
                 _navigateToTarget(context, n);
               },
             );

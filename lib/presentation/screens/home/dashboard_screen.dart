@@ -76,8 +76,25 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       ),
                       IconButton(
-                        onPressed: () => context.push(AppRoutes.notifications),
-                        icon: const Icon(Icons.notifications_outlined),
+                        onPressed: () => context
+                            .push(AppRoutes.notifications)
+                            .then((_) => ref
+                                .invalidate(unreadNotificationCountProvider)),
+                        icon: Builder(
+                          builder: (_) {
+                            final count = ref
+                                    .watch(unreadNotificationCountProvider)
+                                    .valueOrNull ??
+                                0;
+                            if (count == 0) {
+                              return const Icon(Icons.notifications_outlined);
+                            }
+                            return Badge(
+                              label: Text(count > 99 ? '99+' : '$count'),
+                              child: const Icon(Icons.notifications_outlined),
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),

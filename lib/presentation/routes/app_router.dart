@@ -179,6 +179,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: ':id',
                 builder: (_, state) => GroupDetailsScreen(
                   groupId: state.pathParameters['id']!,
+                  initialTab: state.uri.queryParameters['tab'],
                 ),
               ),
             ],

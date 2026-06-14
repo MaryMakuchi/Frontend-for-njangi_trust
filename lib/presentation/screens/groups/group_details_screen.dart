@@ -19,9 +19,29 @@ import '../../widgets/custom_text_field.dart';
 import '../../widgets/group_savings_panel.dart';
 
 class GroupDetailsScreen extends ConsumerWidget {
-  const GroupDetailsScreen({super.key, required this.groupId});
+  const GroupDetailsScreen({super.key, required this.groupId, this.initialTab});
 
   final String groupId;
+
+  /// Optional tab to open on first build (e.g. 'members' from a notification
+  /// deep-link). Defaults to the Overview tab when null/unknown.
+  final String? initialTab;
+
+  static const _tabOrder = [
+    'overview',
+    'members',
+    'social fund',
+    'ledger',
+    'savings',
+    'loans',
+    'chat',
+  ];
+
+  int get _initialIndex {
+    if (initialTab == null) return 0;
+    final i = _tabOrder.indexOf(initialTab!.toLowerCase());
+    return i < 0 ? 0 : i;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -36,6 +56,7 @@ class GroupDetailsScreen extends ConsumerWidget {
           final group = groups.firstWhere((g) => g.id == groupId);
           return DefaultTabController(
             length: 7,
+            initialIndex: _initialIndex,
             child: Column(
               children: [
                 _GroupHeader(group: group),
@@ -197,6 +218,10 @@ class _PlayNjangiSheetState extends ConsumerState<_PlayNjangiSheet> {
           .playNjangi(widget.group.id, source: _source);
       ref.invalidate(groupsProvider);
       ref.invalidate(dashboardProvider);
+      // Reflect the new contribution in the group ledger and global ledger
+      // immediately, with its payment timestamp.
+      ref.invalidate(groupLedgerProvider);
+      ref.invalidate(transactionsProvider);
 
       if (!mounted) return;
       Navigator.of(context).pop();

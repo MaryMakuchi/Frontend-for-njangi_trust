@@ -6,6 +6,8 @@ enum NotificationType {
   contributionConfirmation,
   upcomingPayout,
   groupAnnouncement,
+  mriUpdate,
+  membershipRequest,
 }
 
 class NotificationEntity extends Equatable {
@@ -18,6 +20,7 @@ class NotificationEntity extends Equatable {
     this.isRead = false,
     this.targetType = '',
     this.targetId = '',
+    this.targetView = '',
   });
 
   final String id;
@@ -28,8 +31,9 @@ class NotificationEntity extends Equatable {
   final bool isRead;
   final String targetType;
   final String targetId;
+  final String targetView;
 
   @override
   List<Object?> get props =>
-      [id, title, body, type, createdAt, isRead, targetType, targetId];
+      [id, title, body, type, createdAt, isRead, targetType, targetId, targetView];
 }

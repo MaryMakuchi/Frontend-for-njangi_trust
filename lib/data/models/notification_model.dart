@@ -12,6 +12,7 @@ class NotificationModel {
       isRead: json['is_read'] as bool? ?? false,
       targetType: json['target_type'] as String? ?? '',
       targetId: json['target_id']?.toString() ?? '',
+      targetView: json['target_view'] as String? ?? '',
     );
   }
 
@@ -25,6 +26,10 @@ class NotificationModel {
         return NotificationType.upcomingPayout;
       case 'group_announcement':
         return NotificationType.groupAnnouncement;
+      case 'mri_update':
+        return NotificationType.mriUpdate;
+      case 'membership_request':
+        return NotificationType.membershipRequest;
       default:
         return NotificationType.paymentReminder;
     }
