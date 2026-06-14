@@ -132,10 +132,36 @@ class LoansScreen extends ConsumerWidget {
               ),
               Text('Active Loans', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
-              ...loans.map((loan) => _LoanCard(
-                    loan: loan,
-                    statusColor: _statusColor(loan.status),
-                  )),
+              if (loans.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.account_balance_outlined,
+                        size: 48,
+                        color: Theme.of(context).disabledColor,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No loans have been given out yet',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Request a loan above and it will appear here once it\'s active.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ...loans.map((loan) => _LoanCard(
+                      loan: loan,
+                      statusColor: _statusColor(loan.status),
+                    )),
             ],
           ),
         ),
