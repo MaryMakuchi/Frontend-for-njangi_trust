@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
+import '../../widgets/brand_logo.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -58,19 +59,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: AppColors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: const Icon(
-                  Icons.link_rounded,
-                  size: 56,
-                  color: AppColors.white,
-                ),
-              ),
+              const BrandLogo(size: 100),
               const SizedBox(height: 24),
               Text(
                 AppStrings.appName.toUpperCase(),

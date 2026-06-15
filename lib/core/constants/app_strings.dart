@@ -1,8 +1,8 @@
 class AppStrings {
   AppStrings._();
 
-  static const String appName = 'Njangi Trust';
-  static const String tagline = 'Building Financial Trust Through Technology';
+  static const String appName = 'Nkap';
+  static const String tagline = "Cameroon's circle of money and trust";
   static const String currency = 'CFA';
   static const String currencySymbol = 'FCFA';
 

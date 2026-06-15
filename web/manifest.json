@@ -1,11 +1,11 @@
 {
-    "name": "njangi_trust",
-    "short_name": "njangi_trust",
+    "name": "Nkap",
+    "short_name": "Nkap",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Cameroon's circle of money and trust.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

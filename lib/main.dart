@@ -44,7 +44,7 @@ class _NjangiTrustAppState extends ConsumerState<NjangiTrustApp> {
     });
 
     return MaterialApp.router(
-      title: 'Njangi Trust',
+      title: 'Nkap',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: router,
