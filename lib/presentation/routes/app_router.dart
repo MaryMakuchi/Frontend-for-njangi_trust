@@ -14,6 +14,7 @@ import '../screens/contributions/make_contribution_screen.dart';
 import '../screens/contributions/payment_success_screen.dart';
 import '../screens/groups/create_group_screen.dart';
 import '../screens/groups/group_details_screen.dart';
+import '../screens/groups/group_finances_screen.dart';
 import '../screens/groups/groups_screen.dart';
 import '../screens/groups/join_group_screen.dart';
 import '../screens/home/dashboard_screen.dart';
@@ -48,6 +49,7 @@ class AppRoutes {
   static const groups = '/groups';
   static const groupDetails = '/groups/:id';
   static const createGroup = '/groups/create';
+  static const groupFinances = '/group-finances';
   static const joinGroup = '/groups/join';
   static const contributions = '/contributions';
   static const makeContribution = '/contributions/pay';
@@ -251,6 +253,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.dueDates,
         builder: (_, __) => const DueDatesScreen(),
+      ),
+      GoRoute(
+        path: '${AppRoutes.groupFinances}/:id',
+        builder: (_, state) => GroupFinancesScreen(
+          groupId: state.pathParameters['id']!,
+        ),
       ),
     ],
     errorBuilder: (_, state) => Scaffold(

@@ -20,6 +20,7 @@ import '../../domain/entities/linked_account_entity.dart';
 import '../../domain/entities/loan_entity.dart';
 import '../../domain/entities/membership_request_entity.dart';
 import '../../domain/entities/notification_entity.dart';
+import '../../domain/entities/reconciliation_entity.dart';
 import '../../domain/entities/savings_entity.dart';
 import '../../domain/entities/social_fund_entity.dart';
 import '../../domain/entities/transaction_entity.dart';
@@ -106,6 +107,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserEntity?>> {
     _ref.invalidate(membershipRequestsProvider);
     _ref.invalidate(groupLedgerProvider);
     _ref.invalidate(groupPreviewProvider);
+    _ref.invalidate(reconciliationProvider);
   }
 
   final AuthRepository _repository;
@@ -283,6 +285,12 @@ final groupLedgerProvider = FutureProvider.family<List<TransactionEntity>,
   return ref
       .watch(groupRepositoryProvider)
       .getGroupLedger(params.groupId, category: params.category);
+});
+
+// Treasurer-liability reconciliation, keyed by groupId
+final reconciliationProvider =
+    FutureProvider.family<ReconciliationEntity, String>((ref, groupId) {
+  return ref.watch(groupRepositoryProvider).getReconciliation(groupId);
 });
 
 // MRI score history for the current user

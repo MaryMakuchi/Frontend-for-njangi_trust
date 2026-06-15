@@ -15,7 +15,9 @@ import '../models/due_date_model.dart';
 import '../models/group_message_model.dart';
 import '../models/group_model.dart';
 import '../models/group_preview_model.dart';
+import '../../domain/entities/reconciliation_entity.dart';
 import '../models/membership_request_model.dart';
+import '../models/reconciliation_model.dart';
 import '../models/savings_model.dart';
 import '../models/social_fund_model.dart';
 import '../models/transaction_model.dart';
@@ -290,6 +292,12 @@ class GroupRepositoryImpl implements GroupRepository {
     return parseListResponse(response)
         .map((e) => TransactionModel.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<ReconciliationEntity> getReconciliation(String groupId) async {
+    final response = await _api.get('/groups/$groupId/reconciliation/');
+    return ReconciliationModel.fromJson(parseJsonResponse(response));
   }
 
   @override

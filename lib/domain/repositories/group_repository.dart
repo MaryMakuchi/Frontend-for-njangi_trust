@@ -3,6 +3,7 @@ import '../entities/group_entity.dart';
 import '../entities/group_message_entity.dart';
 import '../entities/group_preview_entity.dart';
 import '../entities/membership_request_entity.dart';
+import '../entities/reconciliation_entity.dart';
 import '../entities/savings_entity.dart';
 import '../entities/social_fund_entity.dart';
 import '../entities/transaction_entity.dart';
@@ -46,6 +47,7 @@ abstract class GroupRepository {
   Future<List<DueDateEntity>> getDueDates({String horizon = '3m'});
   Future<GroupPreviewEntity> getGroupPreview(String groupId);
   Future<List<TransactionEntity>> getGroupLedger(String groupId, {String category = 'all'});
+  Future<ReconciliationEntity> getReconciliation(String groupId);
   Future<List<SocialFundEntity>> getSocialFunds(String groupId);
   Future<SocialFundEntity> createSocialFund({
     required String groupId,

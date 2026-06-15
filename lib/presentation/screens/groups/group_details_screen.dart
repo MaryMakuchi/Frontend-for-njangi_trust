@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
@@ -17,6 +18,7 @@ import '../../widgets/balance_text.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/group_savings_panel.dart';
+import '../../routes/app_router.dart';
 
 class GroupDetailsScreen extends ConsumerWidget {
   const GroupDetailsScreen({super.key, required this.groupId, this.initialTab});
@@ -53,7 +55,14 @@ class GroupDetailsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (groups) {
-          final group = groups.firstWhere((g) => g.id == groupId);
+          final matches = groups.where((g) => g.id == groupId);
+          if (matches.isEmpty) {
+            // The user isn't (or is no longer) a member of this group — e.g.
+            // they followed a stale notification link. Show a friendly message
+            // instead of crashing with a red error screen.
+            return _NotAMember(onBack: () => context.go(AppRoutes.home));
+          }
+          final group = matches.first;
           return DefaultTabController(
             length: 7,
             initialIndex: _initialIndex,
@@ -97,6 +106,47 @@ class GroupDetailsScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Shown when the current user isn't a member of the requested group, instead
+/// of letting the screen crash on missing data.
+class _NotAMember extends StatelessWidget {
+  const _NotAMember({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.lock_outline, size: 48, color: AppColors.mediumGray),
+            const SizedBox(height: 16),
+            const Text(
+              'You are not a member of this group.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'It may have been removed, or your request was not accepted.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.mediumGray),
+            ),
+            const SizedBox(height: 20),
+            TextButton.icon(
+              onPressed: onBack,
+              icon: const Icon(Icons.home_outlined),
+              label: const Text('Back to dashboard'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -560,6 +610,41 @@ class _OverviewTab extends ConsumerWidget {
         _InfoRow('Cycle Progress', '${group.cycleProgress}/${group.maxMembers}'),
         if (isPresident && group.invitationCode != null)
           _InviteCodeRow(code: group.invitationCode!),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: () =>
+              context.push('${AppRoutes.groupFinances}/${group.id}'),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.purpleSurface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.account_balance_wallet_outlined,
+                    color: AppColors.primary),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Group Finances',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        'See expected vs. collected and who has paid this cycle',
+                        style: TextStyle(
+                            fontSize: 12, color: AppColors.mediumGray),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.mediumGray),
+              ],
+            ),
+          ),
+        ),
         if (group.rules != null) ...[
           const SizedBox(height: 16),
           Text('Rules', style: Theme.of(context).textTheme.titleSmall),
