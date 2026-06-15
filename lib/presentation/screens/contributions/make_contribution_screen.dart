@@ -6,6 +6,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/input_formatters.dart';
 import '../../../core/utils/validators.dart';
+import '../../../domain/entities/loan_entity.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
@@ -13,7 +14,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/payment_method_selector.dart';
 
-enum _ContributionTarget { njangi, socialFund }
+enum _ContributionTarget { njangi, socialFund, loanRepayment }
 
 class MakeContributionScreen extends ConsumerStatefulWidget {
   const MakeContributionScreen({super.key});
@@ -30,6 +31,7 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
   bool _isLoading = false;
   _ContributionTarget _target = _ContributionTarget.njangi;
   String? _selectedFundId;
+  String? _selectedLoanId;
 
   @override
   void dispose() {
@@ -53,11 +55,34 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
       return;
     }
 
+    if (_target == _ContributionTarget.loanRepayment && _selectedLoanId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a loan to repay')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final amount = double.parse(_amountController.text.replaceAll(',', ''));
 
-      if (_target == _ContributionTarget.socialFund) {
+      if (_target == _ContributionTarget.loanRepayment) {
+        final loan = await ref.read(loanRepositoryProvider).repayLoan(
+              loanId: _selectedLoanId!,
+              amount: amount,
+            );
+        ref.read(lastPaymentProvider.notifier).state = TransactionEntity(
+          id: loan.id,
+          title: 'Loan Repayment - ${loan.purpose}',
+          amount: amount,
+          type: TransactionType.loanRepayment,
+          status: TransactionStatus.completed,
+          date: DateTime.now(),
+          groupName: loan.groupName,
+        );
+        ref.invalidate(loansProvider);
+        ref.read(authStateProvider.notifier).refreshUser();
+      } else if (_target == _ContributionTarget.socialFund) {
         final fund = await ref.read(groupRepositoryProvider).contributeSocialFund(
               groupId: _selectedGroupId!,
               fundId: _selectedFundId!,
@@ -91,6 +116,9 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
 
   bool get _canSubmit {
     if (_target == _ContributionTarget.socialFund && _selectedFundId == null) {
+      return false;
+    }
+    if (_target == _ContributionTarget.loanRepayment && _selectedLoanId == null) {
       return false;
     }
     return true;
@@ -139,7 +167,7 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
                       Expanded(
                         child: _ContributionTypeCard(
                           icon: Icons.repeat,
-                          label: 'Njangi Contribution',
+                          label: 'Njangi',
                           isSelected: _target == _ContributionTarget.njangi,
                           onTap: () => setState(() => _target = _ContributionTarget.njangi),
                         ),
@@ -153,6 +181,15 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
                           onTap: () => setState(() => _target = _ContributionTarget.socialFund),
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ContributionTypeCard(
+                          icon: Icons.account_balance_outlined,
+                          label: 'Loan Repayment',
+                          isSelected: _target == _ContributionTarget.loanRepayment,
+                          onTap: () => setState(() => _target = _ContributionTarget.loanRepayment),
+                        ),
+                      ),
                     ],
                   ),
                   if (_target == _ContributionTarget.socialFund)
@@ -160,6 +197,12 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
                       groupId: _selectedGroupId!,
                       selectedFundId: _selectedFundId,
                       onChanged: (id) => setState(() => _selectedFundId = id),
+                    ),
+                  if (_target == _ContributionTarget.loanRepayment)
+                    _LoanPicker(
+                      groupId: _selectedGroupId!,
+                      selectedLoanId: _selectedLoanId,
+                      onChanged: (id) => setState(() => _selectedLoanId = id),
                     ),
                 ],
                 const SizedBox(height: 20),
@@ -169,7 +212,7 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
                   keyboardType: TextInputType.number,
                   validator: Validators.amount,
                   inputFormatters: [ThousandsSeparatorInputFormatter()],
-                  prefixIcon: const Icon(Icons.attach_money),
+                  prefixIcon: const Icon(Icons.payments_outlined),
                 ),
                 const SizedBox(height: 16),
                 Text('Quick Select', style: Theme.of(context).textTheme.titleSmall),
@@ -275,6 +318,99 @@ class _ContributionTypeCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LoanPicker extends ConsumerWidget {
+  const _LoanPicker({
+    required this.groupId,
+    required this.selectedLoanId,
+    required this.onChanged,
+  });
+
+  final String groupId;
+  final String? selectedLoanId;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loansAsync = ref.watch(loansProvider);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: loansAsync.when(
+        loading: () => const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        error: (e, _) => Text(
+          'Failed to load loans: $e',
+          style: const TextStyle(color: AppColors.error),
+        ),
+        data: (loans) {
+          // Only active loans for the selected group can be repaid here.
+          final repayable = loans
+              .where((l) =>
+                  l.status == LoanStatus.active &&
+                  (l.groupId == null || l.groupId == groupId))
+              .toList();
+
+          if (repayable.isEmpty) {
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.purpleSurface,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.info_outline, color: AppColors.mediumGray, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text('You have no active loans to repay in this group.'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (selectedLoanId == null ||
+              !repayable.any((l) => l.id == selectedLoanId)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              onChanged(repayable.first.id);
+            });
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              Text('Select Loan', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: repayable.any((l) => l.id == selectedLoanId)
+                    ? selectedLoanId
+                    : null,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.account_balance_outlined),
+                ),
+                items: repayable
+                    .map((l) => DropdownMenuItem(
+                          value: l.id,
+                          child: Text(
+                            '${l.purpose} • Balance '
+                            '${Formatters.currency(l.remainingBalance ?? l.amount, showSymbol: false)}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ))
+                    .toList(),
+                onChanged: onChanged,
+              ),
+            ],
+          );
+        },
       ),
     );
   }

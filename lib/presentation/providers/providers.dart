@@ -74,12 +74,38 @@ final walletRepositoryProvider = Provider<WalletRepository>(
 // Auth state
 final authStateProvider =
     StateNotifierProvider<AuthNotifier, AsyncValue<UserEntity?>>(
-  (ref) => AuthNotifier(ref.watch(authRepositoryProvider)),
+  (ref) => AuthNotifier(ref.watch(authRepositoryProvider), ref),
 );
 
 class AuthNotifier extends StateNotifier<AsyncValue<UserEntity?>> {
-  AuthNotifier(this._repository) : super(const AsyncValue.loading()) {
+  AuthNotifier(this._repository, this._ref) : super(const AsyncValue.loading()) {
     _checkAuth();
+  }
+
+  final Ref _ref;
+
+  /// Clears every user-scoped provider so one account never shows another
+  /// account's cached data after a login/register/logout transition.
+  void _resetUserData() {
+    _ref.invalidate(dashboardProvider);
+    _ref.invalidate(groupsProvider);
+    _ref.invalidate(contributionsProvider);
+    _ref.invalidate(loansProvider);
+    _ref.invalidate(maxLoanAmountProvider);
+    _ref.invalidate(pendingLoanVotesProvider);
+    _ref.invalidate(notificationsProvider);
+    _ref.invalidate(unreadNotificationCountProvider);
+    _ref.invalidate(transactionsProvider);
+    _ref.invalidate(savingsHistoryProvider);
+    _ref.invalidate(linkedAccountsProvider);
+    _ref.invalidate(mriHistoryProvider);
+    _ref.invalidate(dueDatesProvider);
+    _ref.invalidate(groupSocialFundsProvider);
+    _ref.invalidate(groupMessagesProvider);
+    _ref.invalidate(groupSavingsProvider);
+    _ref.invalidate(membershipRequestsProvider);
+    _ref.invalidate(groupLedgerProvider);
+    _ref.invalidate(groupPreviewProvider);
   }
 
   final AuthRepository _repository;
@@ -102,6 +128,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserEntity?>> {
     state = const AsyncValue.loading();
     try {
       final user = await _repository.login(email: email, password: password);
+      _resetUserData();
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -113,6 +140,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserEntity?>> {
     state = const AsyncValue.loading();
     try {
       final user = await _repository.loginWithPhone(phone: phone, password: password);
+      _resetUserData();
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -134,6 +162,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserEntity?>> {
         phone: phone,
         password: password,
       );
+      _resetUserData();
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -143,6 +172,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserEntity?>> {
 
   Future<void> logout() async {
     await _repository.logout();
+    _resetUserData();
     state = const AsyncValue.data(null);
   }
 

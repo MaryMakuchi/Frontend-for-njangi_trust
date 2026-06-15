@@ -27,6 +27,7 @@ class TransactionEntity extends Equatable {
     this.isCredit = false,
     this.onChain = false,
     this.explorerUrl,
+    this.initiatedBy,
   });
 
   final String id;
@@ -40,6 +41,7 @@ class TransactionEntity extends Equatable {
   final bool isCredit;
   final bool onChain;
   final String? explorerUrl;
+  final String? initiatedBy;
 
   @override
   List<Object?> get props => [
@@ -54,5 +56,6 @@ class TransactionEntity extends Equatable {
         isCredit,
         onChain,
         explorerUrl,
+        initiatedBy,
       ];
 }

@@ -57,44 +57,71 @@ class GroupDetailsScreen extends ConsumerWidget {
           return DefaultTabController(
             length: 7,
             initialIndex: _initialIndex,
-            child: Column(
-              children: [
-                _GroupHeader(group: group),
-                const TabBar(
-                  isScrollable: true,
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: AppColors.mediumGray,
-                  indicatorColor: AppColors.primary,
-                  tabs: [
-                    Tab(text: 'Overview'),
-                    Tab(text: 'Members'),
-                    Tab(text: 'Social Fund'),
-                    Tab(text: 'Ledger'),
-                    Tab(text: 'Savings'),
-                    Tab(text: 'Loans'),
-                    Tab(text: 'Chat'),
-                  ],
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _OverviewTab(group: group),
-                      _MembersTab(group: group),
-                      _SocialFundTab(group: group),
-                      _LedgerTab(group: group),
-                      _SavingsTab(group: group),
-                      const Center(child: Text('Group loans coming soon')),
-                      _ChatTab(group: group),
-                    ],
+            // NestedScrollView lets the header scroll away ("collapse up")
+            // while the tab bar stays pinned, giving more room to read each tab.
+            child: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                SliverToBoxAdapter(child: _GroupHeader(group: group)),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _PinnedTabBarDelegate(
+                    const TabBar(
+                      isScrollable: true,
+                      labelColor: AppColors.primary,
+                      unselectedLabelColor: AppColors.mediumGray,
+                      indicatorColor: AppColors.primary,
+                      tabs: [
+                        Tab(text: 'Overview'),
+                        Tab(text: 'Members'),
+                        Tab(text: 'Social Fund'),
+                        Tab(text: 'Ledger'),
+                        Tab(text: 'Savings'),
+                        Tab(text: 'Loans'),
+                        Tab(text: 'Chat'),
+                      ],
+                    ),
                   ),
                 ),
               ],
+              body: TabBarView(
+                children: [
+                  _OverviewTab(group: group),
+                  _MembersTab(group: group),
+                  _SocialFundTab(group: group),
+                  _LedgerTab(group: group),
+                  _SavingsTab(group: group),
+                  const Center(child: Text('Group loans coming soon')),
+                  _ChatTab(group: group),
+                ],
+              ),
             ),
           );
         },
       ),
     );
   }
+}
+
+/// Keeps the tab bar pinned at the top while the group header scrolls away.
+class _PinnedTabBarDelegate extends SliverPersistentHeaderDelegate {
+  _PinnedTabBarDelegate(this.tabBar);
+
+  final TabBar tabBar;
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Material(color: AppColors.white, child: tabBar);
+  }
+
+  @override
+  bool shouldRebuild(_PinnedTabBarDelegate oldDelegate) =>
+      oldDelegate.tabBar != tabBar;
 }
 
 class _GroupHeader extends StatelessWidget {
@@ -1492,6 +1519,25 @@ class _LedgerTile extends StatelessWidget {
             Formatters.dateTime(t.date),
             style: Theme.of(context).textTheme.bodySmall,
           ),
+          if (t.initiatedBy != null && t.initiatedBy!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.person_outline,
+                    size: 14, color: AppColors.mediumGray),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'By ${t.initiatedBy}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.mediumGray,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (t.onChain && t.explorerUrl != null) ...[
             const SizedBox(height: 8),
             GestureDetector(

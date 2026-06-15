@@ -15,6 +15,7 @@ class TransactionModel {
       isCredit: json['is_credit'] as bool? ?? false,
       onChain: json['on_chain'] as bool? ?? false,
       explorerUrl: json['explorer_url'] as String?,
+      initiatedBy: json['initiated_by'] as String?,
     );
   }
 
