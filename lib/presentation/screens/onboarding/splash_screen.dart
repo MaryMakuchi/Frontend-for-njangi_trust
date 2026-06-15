@@ -53,18 +53,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     return Scaffold(
       body: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(gradient: AppColors.richGradient),
+        decoration: const BoxDecoration(gradient: AppColors.lightSurfaceGradient),
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const BrandLogo(size: 100),
+              const BrandLogo(size: 140, onLight: true),
               const SizedBox(height: 24),
               Text(
                 AppStrings.appName.toUpperCase(),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.white,
+                      color: AppColors.primary,
                       letterSpacing: 2,
                     ),
               ),
@@ -73,12 +73,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 AppStrings.tagline,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.white.withValues(alpha: 0.85),
+                      color: AppColors.mediumGray,
                     ),
               ),
               const SizedBox(height: 48),
               const CircularProgressIndicator(
-                color: AppColors.blush,
+                color: AppColors.primary,
                 strokeWidth: 2,
               ),
             ],
