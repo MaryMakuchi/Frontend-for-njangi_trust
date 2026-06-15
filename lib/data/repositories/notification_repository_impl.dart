@@ -47,4 +47,26 @@ class NotificationRepositoryImpl implements NotificationRepository {
     final response = await _api.post('/notifications/read-all/');
     parseJsonResponse(response);
   }
+
+  @override
+  Future<void> registerDeviceToken(String token, {String platform = 'android'}) async {
+    if (AppConstants.useMockData) return;
+
+    final response = await _api.post(
+      '/notifications/devices/register/',
+      body: {'token': token, 'platform': platform},
+    );
+    parseJsonResponse(response);
+  }
+
+  @override
+  Future<void> unregisterDeviceToken(String token) async {
+    if (AppConstants.useMockData) return;
+
+    final response = await _api.post(
+      '/notifications/devices/unregister/',
+      body: {'token': token},
+    );
+    parseJsonResponse(response);
+  }
 }

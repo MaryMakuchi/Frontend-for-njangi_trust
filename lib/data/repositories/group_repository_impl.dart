@@ -1,5 +1,6 @@
 import '../../core/constants/app_constants.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/local_cache.dart';
 import '../../core/utils/api_helper.dart';
 import '../../domain/entities/due_date_entity.dart';
 import '../../domain/entities/group_entity.dart';
@@ -23,18 +24,36 @@ import '../models/social_fund_model.dart';
 import '../models/transaction_model.dart';
 
 class GroupRepositoryImpl implements GroupRepository {
-  GroupRepositoryImpl({ApiService? api}) : _api = api ?? ApiService();
+  GroupRepositoryImpl({ApiService? api, LocalCache? cache})
+      : _api = api ?? ApiService(),
+        _cache = cache ?? LocalCache();
 
   final ApiService _api;
+  final LocalCache _cache;
+
+  static const _groupsCacheKey = 'groups';
 
   @override
   Future<List<GroupEntity>> getGroups() async {
     if (AppConstants.useMockData) return MockData.groups;
 
-    final response = await _api.get('/groups/');
-    return parseListResponse(response)
-        .map((e) => GroupModel.fromJson(e as Map<String, dynamic>))
-        .toList();
+    try {
+      final response = await _api.get('/groups/');
+      final list = parseListResponse(response);
+      await _cache.writeJson(_groupsCacheKey, list);
+      return list
+          .map((e) => GroupModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      // Offline-first fallback: serve the last-known groups if we have them.
+      final cached = await _cache.readJson(_groupsCacheKey);
+      if (cached is List) {
+        return cached
+            .map((e) => GroupModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      rethrow;
+    }
   }
 
   @override

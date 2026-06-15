@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/connectivity_service.dart';
+import '../../core/services/local_cache.dart';
+import '../../core/services/notification_service.dart';
 import '../../core/services/secure_storage_service.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../data/repositories/contribution_repository_impl.dart';
@@ -43,6 +46,18 @@ final apiServiceProvider = Provider<ApiService>(
   (ref) => ApiService(storage: ref.watch(secureStorageProvider)),
 );
 
+final localCacheProvider = Provider<LocalCache>((ref) => LocalCache());
+
+final connectivityServiceProvider = Provider<ConnectivityService>(
+  (ref) => ConnectivityService(),
+);
+
+/// Whether the device is currently online. Defaults to true until the first
+/// reading arrives, so the UI doesn't flash an offline banner on launch.
+final connectivityProvider = StreamProvider<bool>(
+  (ref) => ref.watch(connectivityServiceProvider).onStatusChange,
+);
+
 // Repositories
 final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => AuthRepositoryImpl(
@@ -64,6 +79,9 @@ final loanRepositoryProvider = Provider<LoanRepository>(
 );
 final notificationRepositoryProvider = Provider<NotificationRepository>(
   (ref) => NotificationRepositoryImpl(api: ref.watch(apiServiceProvider)),
+);
+final notificationServiceProvider = Provider<NotificationService>(
+  (ref) => NotificationService(ref.watch(notificationRepositoryProvider)),
 );
 final transactionRepositoryProvider = Provider<TransactionRepository>(
   (ref) => TransactionRepositoryImpl(api: ref.watch(apiServiceProvider)),
@@ -108,6 +126,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<UserEntity?>> {
     _ref.invalidate(groupLedgerProvider);
     _ref.invalidate(groupPreviewProvider);
     _ref.invalidate(reconciliationProvider);
+    // Drop offline read-cache so one account never serves another's data.
+    _ref.read(localCacheProvider).clear();
   }
 
   final AuthRepository _repository;

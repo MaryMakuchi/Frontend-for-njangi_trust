@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_strings.dart';
+import '../providers/providers.dart';
 import '../routes/app_router.dart';
 
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerWidget {
   const MainShell({super.key, required this.child});
 
   final Widget child;
@@ -34,10 +36,16 @@ class MainShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final index = _currentIndex(context);
+    final isOnline = ref.watch(connectivityProvider).valueOrNull ?? true;
     return Scaffold(
-      body: child,
+      body: Column(
+        children: [
+          if (!isOnline) const _OfflineBanner(),
+          Expanded(child: child),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: AppColors.white,
@@ -170,6 +178,36 @@ class _NavItem extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Thin banner shown across the app while the device is offline. Reads still
+/// work from the local cache; this just sets expectations.
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.warning,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.cloud_off, size: 16, color: Colors.white),
+              SizedBox(width: 8),
+              Text(
+                'You are offline — showing saved data',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
