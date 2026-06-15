@@ -8,6 +8,10 @@ class AppConstants {
   static const bool useMockData = false;
 
   static String get apiBaseUrl {
+    // Allows overriding at build/run time, e.g. for a physical device on the
+    // same Wi-Fi network: flutter run --dart-define=API_BASE_URL=http://192.168.x.x:8000/api/v1
+    const override = String.fromEnvironment('API_BASE_URL');
+    if (override.isNotEmpty) return override;
     if (useMockData) return 'https://api.njangitrust.com/v1';
     if (kIsWeb) return 'http://127.0.0.1:8000/api/v1';
     if (defaultTargetPlatform == TargetPlatform.android) {
