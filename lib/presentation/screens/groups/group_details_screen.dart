@@ -965,6 +965,60 @@ class _PickingOrderActionsState extends ConsumerState<_PickingOrderActions> {
     });
   }
 
+  /// Let the server compute a reliability-weighted order. Members with stronger
+  /// MRI scores are favoured for the earliest (highest-risk) payout slots, and
+  /// clearly unreliable members are kept out of the early window.
+  Future<void> _orderByReliability() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Order by Reliability?'),
+        content: const Text(
+          'The picking order will be set automatically from members\' '
+          'reliability (MRI) scores. More reliable members are favoured for the '
+          'earliest payout positions, which protects the group against early '
+          'receivers who might stop contributing.\n\n'
+          'You can still re-run picking later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Apply'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(groupRepositoryProvider).assignPickingOrder(
+            groupId: widget.group.id,
+            mode: 'mri_weighted',
+          );
+      ref.invalidate(groupsProvider);
+      if (mounted) {
+        setState(() => _hasDraft = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Picking order set by reliability (MRI).'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final message = e is ApiException ? e.message : AppStrings.genericError;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _save() async {
     setState(() => _isLoading = true);
     try {
@@ -997,8 +1051,22 @@ class _PickingOrderActionsState extends ConsumerState<_PickingOrderActions> {
       children: [
         if (!_hasDraft) ...[
           CustomButton(
+            label: 'Order by Reliability (MRI)',
+            icon: Icons.verified_user_outlined,
+            isLoading: _isLoading,
+            onPressed: _orderByReliability,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Recommended: favours reliable members for early payouts and keeps '
+            'high-risk members out of the earliest positions.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          CustomButton(
             label: 'Pick Randomly',
             icon: Icons.shuffle,
+            isOutlined: true,
             isLoading: _isLoading,
             onPressed: _shuffle,
           ),
