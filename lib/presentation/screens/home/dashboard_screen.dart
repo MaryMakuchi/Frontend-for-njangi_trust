@@ -822,13 +822,17 @@ class _TotalBalanceCard extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 8),
-            BalanceText(
-              totalBalance,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-              iconColor: AppColors.white,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: BalanceText(
+                totalBalance,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                iconColor: AppColors.white,
+              ),
             ),
             const SizedBox(height: 4),
             Text(

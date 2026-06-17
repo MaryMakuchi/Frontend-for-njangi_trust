@@ -366,12 +366,25 @@ class _ActivePeriodView extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: CustomButton(
-                label:
-                    'Available when the savings period ends on ${Formatters.date(period.endDate)}',
-                icon: Icons.north_east,
-                isOutlined: true,
-                onPressed: null,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  CustomButton(
+                    label: 'Withdraw',
+                    icon: Icons.north_east,
+                    isOutlined: true,
+                    onPressed: null,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Available ${Formatters.date(period.endDate)}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.mediumGray,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
