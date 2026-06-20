@@ -4,11 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/api_helper.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/utils/input_formatters.dart';
 import '../../../domain/entities/loan_entity.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
-import '../../widgets/balance_text.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 
@@ -84,14 +84,13 @@ class LoansScreen extends ConsumerWidget {
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          BalanceText(
-                            max,
+                          Text(
+                            Formatters.currency(max),
                             style: const TextStyle(
                               color: AppColors.white,
                               fontSize: 24,
                               fontWeight: FontWeight.w800,
                             ),
-                            iconColor: AppColors.white,
                           ),
                         ],
                       ),
@@ -215,7 +214,7 @@ class _LoanCardState extends ConsumerState<_LoanCard> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('Remaining balance: '),
-                  BalanceText(loan.remainingBalance ?? 0),
+                  Text(Formatters.currency(loan.remainingBalance ?? 0)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -317,8 +316,8 @@ class _LoanCardState extends ConsumerState<_LoanCard> {
             ],
           ),
           const SizedBox(height: 8),
-          BalanceText(
-            loan.amount,
+          Text(
+            Formatters.currency(loan.amount),
             style: Theme.of(context).textTheme.titleLarge,
           ),
           if (loan.groupName != null)
@@ -362,8 +361,8 @@ class _LoanCardState extends ConsumerState<_LoanCard> {
                   'Remaining: ',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
-                BalanceText(
-                  loan.remainingBalance ?? 0,
+                Text(
+                  Formatters.currency(loan.remainingBalance ?? 0),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -439,7 +438,7 @@ class _PendingVoteCardState extends ConsumerState<_PendingVoteCard> {
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ),
-              BalanceText(vote.amount, style: Theme.of(context).textTheme.titleSmall),
+              Text(Formatters.currency(vote.amount), style: Theme.of(context).textTheme.titleSmall),
             ],
           ),
           const SizedBox(height: 4),

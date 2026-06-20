@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/api_helper.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/utils/input_formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../../domain/entities/linked_account_entity.dart';
 import '../../providers/providers.dart';
-import '../../widgets/balance_text.dart';
 import '../../widgets/custom_text_field.dart';
 
 class WalletAccountsScreen extends ConsumerWidget {
@@ -47,23 +47,21 @@ class WalletAccountsScreen extends ConsumerWidget {
                       style: TextStyle(color: AppColors.white),
                     ),
                     const SizedBox(height: 8),
-                    BalanceText(
-                      dashboard.walletBalance,
+                    Text(
+                      Formatters.currency(dashboard.walletBalance),
                       style: const TextStyle(
                         color: AppColors.white,
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
                       ),
-                      iconColor: AppColors.white,
                     ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
                         const Text('Savings Balance: ', style: TextStyle(color: AppColors.white)),
-                        BalanceText(
-                          dashboard.savingsBalance,
+                        Text(
+                          Formatters.currency(dashboard.savingsBalance),
                           style: const TextStyle(color: AppColors.white),
-                          iconColor: AppColors.white,
                         ),
                       ],
                     ),

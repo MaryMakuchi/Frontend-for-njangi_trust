@@ -8,7 +8,6 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/utils/input_formatters.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/providers.dart';
-import '../../widgets/balance_text.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 
@@ -116,8 +115,8 @@ class _RequestLoanScreenState extends ConsumerState<RequestLoanScreen> {
                         'You are eligible to request up to ',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      BalanceText(
-                        max,
+                      Text(
+                        Formatters.currency(max),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       Text(

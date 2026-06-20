@@ -7,7 +7,6 @@ import '../../core/utils/formatters.dart';
 import '../../core/utils/input_formatters.dart';
 import '../../domain/entities/savings_entity.dart';
 import '../providers/providers.dart';
-import 'balance_text.dart';
 import 'custom_button.dart';
 import 'custom_text_field.dart';
 
@@ -296,23 +295,21 @@ class _ActivePeriodView extends ConsumerWidget {
             children: [
               const Text('My Savings', style: TextStyle(color: AppColors.white)),
               const SizedBox(height: 8),
-              BalanceText(
-                savings?.total ?? 0,
+              Text(
+                Formatters.currency(savings?.total ?? 0),
                 style: const TextStyle(
                   color: AppColors.white,
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
                 ),
-                iconColor: AppColors.white,
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   const Text('Principal: ', style: TextStyle(color: AppColors.white)),
-                  BalanceText(
-                    savings?.principal ?? 0,
+                  Text(
+                    Formatters.currency(savings?.principal ?? 0),
                     style: const TextStyle(color: AppColors.white),
-                    iconColor: AppColors.white,
                   ),
                 ],
               ),
@@ -321,10 +318,9 @@ class _ActivePeriodView extends ConsumerWidget {
                 children: [
                   const Text('Interest accrued: ',
                       style: TextStyle(color: AppColors.white)),
-                  BalanceText(
-                    savings?.interestAccrued ?? 0,
+                  Text(
+                    Formatters.currency(savings?.interestAccrued ?? 0),
                     style: const TextStyle(color: AppColors.white),
-                    iconColor: AppColors.white,
                   ),
                 ],
               ),
@@ -406,7 +402,7 @@ class _ActivePeriodView extends ConsumerWidget {
             (d) => ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.south_west, color: AppColors.success),
-              title: BalanceText(d.amount),
+              title: Text(Formatters.currency(d.amount)),
               subtitle: Text(Formatters.date(d.date)),
             ),
           ),
@@ -619,23 +615,21 @@ class _ClosedPeriodView extends ConsumerWidget {
             children: [
               const Text('Savings Period Closed', style: TextStyle(color: AppColors.white)),
               const SizedBox(height: 8),
-              BalanceText(
-                savings?.total ?? 0,
+              Text(
+                Formatters.currency(savings?.total ?? 0),
                 style: const TextStyle(
                   color: AppColors.white,
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
                 ),
-                iconColor: AppColors.white,
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   const Text('Principal: ', style: TextStyle(color: AppColors.white)),
-                  BalanceText(
-                    savings?.principal ?? 0,
+                  Text(
+                    Formatters.currency(savings?.principal ?? 0),
                     style: const TextStyle(color: AppColors.white),
-                    iconColor: AppColors.white,
                   ),
                 ],
               ),
@@ -644,10 +638,9 @@ class _ClosedPeriodView extends ConsumerWidget {
                 children: [
                   const Text('Interest accrued: ',
                       style: TextStyle(color: AppColors.white)),
-                  BalanceText(
-                    savings?.interestAccrued ?? 0,
+                  Text(
+                    Formatters.currency(savings?.interestAccrued ?? 0),
                     style: const TextStyle(color: AppColors.white),
-                    iconColor: AppColors.white,
                   ),
                 ],
               ),

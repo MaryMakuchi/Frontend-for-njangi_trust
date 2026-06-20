@@ -14,7 +14,6 @@ import '../../../domain/entities/membership_request_entity.dart';
 import '../../../domain/entities/social_fund_entity.dart';
 import '../../../domain/entities/transaction_entity.dart';
 import '../../providers/providers.dart';
-import '../../widgets/balance_text.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/group_savings_panel.dart';
@@ -550,11 +549,7 @@ class _HeaderStat extends StatelessWidget {
             ),
           ),
           amount != null
-              ? BalanceText(
-                  amount!,
-                  style: valueStyle,
-                  iconColor: AppColors.white,
-                )
+              ? Text(Formatters.currency(amount!), style: valueStyle)
               : Text(value, style: valueStyle),
         ],
       ),
@@ -1466,8 +1461,8 @@ class _SocialFundCardState extends ConsumerState<_SocialFundCard> {
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
-          BalanceText(
-            fund.balance,
+          Text(
+            Formatters.currency(fund.balance),
             style: Theme.of(context).textTheme.titleLarge,
           ),
           if (fund.targetAmount != null)
@@ -1478,8 +1473,8 @@ class _SocialFundCardState extends ConsumerState<_SocialFundCard> {
                   'Target: ',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
-                BalanceText(
-                  fund.targetAmount!,
+                Text(
+                  Formatters.currency(fund.targetAmount!),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -1522,7 +1517,7 @@ class _SocialFundCardState extends ConsumerState<_SocialFundCard> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(c.userName),
                 subtitle: Text(Formatters.date(c.createdAt)),
-                trailing: BalanceText(c.amount),
+                trailing: Text(Formatters.currency(c.amount)),
               ),
             ),
           ],
@@ -1957,7 +1952,7 @@ class _InfoRow extends StatelessWidget {
         children: [
           Text(label, style: Theme.of(context).textTheme.bodyMedium),
           amount != null
-              ? BalanceText(amount!, style: valueStyle)
+              ? Text(Formatters.currency(amount!), style: valueStyle)
               : Text(value, style: valueStyle),
         ],
       ),

@@ -226,42 +226,50 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
                 const SizedBox(height: 20),
                 PaymentMethodSelector(
                   selected: _paymentMethod,
-                  onSelected: (m) => setState(() => _paymentMethod = m),
+                  onSelected: (m) => setState(() {
+                    _paymentMethod = m;
+                    _momoController.clear();
+                  }),
                 ),
                 if (_needsMomoNumber) ...[
                   const SizedBox(height: 16),
                   CustomTextField(
-                    label: '${_paymentMethod} Number',
+                    label: 'Phone Number',
                     controller: _momoController,
                     keyboardType: TextInputType.phone,
                     prefixIcon: const Icon(Icons.phone_android_outlined),
+                    onChanged: (_) => setState(() {}),
                   ),
                 ],
-                const SizedBox(height: 20),
-                CustomTextField(
-                  label: 'Amount (CFA)',
-                  controller: _amountController,
-                  keyboardType: TextInputType.number,
-                  validator: Validators.amount,
-                  inputFormatters: [ThousandsSeparatorInputFormatter()],
-                  prefixIcon: const Icon(Icons.payments_outlined),
-                ),
-                const SizedBox(height: 16),
-                Text('Quick Select', style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: AppConstants.quickAmounts.map((amount) {
-                    return ActionChip(
-                      label: Text(Formatters.currency(amount, showSymbol: false)),
-                      onPressed: () {
-                        _amountController.text =
-                            Formatters.currency(amount, showSymbol: false);
-                      },
-                      backgroundColor: AppColors.purpleSurface,
-                    );
-                  }).toList(),
-                ),
+                if (!_needsMomoNumber || _momoController.text.trim().isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  CustomTextField(
+                    label: 'Amount (CFA)',
+                    controller: _amountController,
+                    keyboardType: TextInputType.number,
+                    validator: Validators.amount,
+                    inputFormatters: [ThousandsSeparatorInputFormatter()],
+                    prefixIcon: const Icon(Icons.payments_outlined),
+                  ),
+                ],
+                if (!_needsMomoNumber || _momoController.text.trim().isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text('Quick Select', style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: AppConstants.quickAmounts.map((amount) {
+                      return ActionChip(
+                        label: Text(Formatters.currency(amount, showSymbol: false)),
+                        onPressed: () {
+                          _amountController.text =
+                              Formatters.currency(amount, showSymbol: false);
+                        },
+                        backgroundColor: AppColors.purpleSurface,
+                      );
+                    }).toList(),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 const SizedBox(height: 16),
                 Container(

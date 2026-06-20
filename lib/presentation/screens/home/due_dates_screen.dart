@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/utils/njangi_hype.dart';
 import '../../../domain/entities/due_date_entity.dart';
 import '../../providers/providers.dart';
-import '../../widgets/balance_text.dart';
 
 /// Visual metadata (color + icon) for a due-date [type].
 ({Color color, IconData icon}) dueDateTypeStyle(String type) {
@@ -145,12 +145,11 @@ class DueDateTile extends StatelessWidget {
           ),
           if (due.amount != null) ...[
             const SizedBox(width: 8),
-            BalanceText(
-              due.amount!,
+            Text(
+              Formatters.currency(due.amount!),
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
-              iconColor: AppColors.mediumGray,
             ),
           ],
         ],
