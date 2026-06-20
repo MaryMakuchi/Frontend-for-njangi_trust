@@ -1,13 +1,19 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 
-/// Initialize Firebase if the platform has been configured.
+import '../../firebase_options.dart';
+
+/// Initialize Firebase using the generated platform options.
 ///
-/// Returns true on success. Guarded so the app still runs when Firebase hasn't
-/// been set up yet (run `flutterfire configure` to generate the native config).
+/// `firebase_options.dart` is produced by `flutterfire configure`. Initializing
+/// with [DefaultFirebaseOptions] means push works without needing the native
+/// google-services Gradle plugin. Guarded so the app still runs if Firebase is
+/// unreachable for any reason.
 Future<bool> initializeFirebase() async {
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     return true;
   } catch (e) {
     debugPrint('Firebase not initialized (push disabled): $e');
