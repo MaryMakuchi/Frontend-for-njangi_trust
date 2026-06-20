@@ -318,11 +318,48 @@ final mriHistoryProvider = FutureProvider<MriHistoryEntity>((ref) {
   return ref.watch(authRepositoryProvider).getMriHistory();
 });
 
-// Onboarding flag
-final onboardingCompleteProvider = StateProvider<bool>((ref) => false);
+// Onboarding flag — persisted so the carousel is only shown once
+class OnboardingNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    _load();
+    return false;
+  }
 
-// Whether wallet/savings balances are currently revealed (PIN-gated)
-final balanceVisibleProvider = StateProvider<bool>((ref) => false);
+  Future<void> _load() async {
+    state = await ref.read(localCacheProvider).readBool('onboarding_done');
+  }
+
+  Future<void> markDone() async {
+    await ref.read(localCacheProvider).writeBool('onboarding_done', true);
+    state = true;
+  }
+}
+
+final onboardingCompleteProvider =
+    NotifierProvider<OnboardingNotifier, bool>(OnboardingNotifier.new);
+
+// Whether wallet/savings balances are currently revealed (PIN-gated).
+// Persisted so the user's last visibility choice survives app restarts.
+class BalanceVisibleNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    _load();
+    return false;
+  }
+
+  Future<void> _load() async {
+    state = await ref.read(localCacheProvider).readBool('balance_visible');
+  }
+
+  Future<void> set(bool value) async {
+    await ref.read(localCacheProvider).writeBool('balance_visible', value);
+    state = value;
+  }
+}
+
+final balanceVisibleProvider =
+    NotifierProvider<BalanceVisibleNotifier, bool>(BalanceVisibleNotifier.new);
 
 // Last payment result for success screen
 final lastPaymentProvider = StateProvider<TransactionEntity?>((ref) => null);

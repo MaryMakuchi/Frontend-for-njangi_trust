@@ -26,6 +26,7 @@ class MakeContributionScreen extends ConsumerStatefulWidget {
 
 class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen> {
   final _amountController = TextEditingController();
+  final _momoController = TextEditingController();
   String? _selectedGroupId;
   String _paymentMethod = AppConstants.paymentMethods.first;
   bool _isLoading = false;
@@ -33,9 +34,13 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
   String? _selectedFundId;
   String? _selectedLoanId;
 
+  bool get _needsMomoNumber =>
+      _paymentMethod == 'MTN MoMo' || _paymentMethod == 'Orange Money';
+
   @override
   void dispose() {
     _amountController.dispose();
+    _momoController.dispose();
     super.dispose();
   }
 
@@ -135,6 +140,17 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (groups) {
           _selectedGroupId ??= groups.isNotEmpty ? groups.first.id : null;
+
+          // Load social funds and loans to determine which types are available.
+          final fundsAsync = _selectedGroupId != null
+              ? ref.watch(groupSocialFundsProvider(_selectedGroupId!))
+              : null;
+          final loansAsync = ref.watch(loansProvider);
+          final hasFunds = fundsAsync?.valueOrNull?.any((f) => f.isActive) ?? true;
+          final hasLoans = loansAsync.valueOrNull
+                  ?.any((l) => l.status == LoanStatus.active) ??
+              true;
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -178,6 +194,7 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
                           icon: Icons.volunteer_activism_outlined,
                           label: 'Social Fund',
                           isSelected: _target == _ContributionTarget.socialFund,
+                          disabled: !hasFunds,
                           onTap: () => setState(() => _target = _ContributionTarget.socialFund),
                         ),
                       ),
@@ -187,6 +204,7 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
                           icon: Icons.account_balance_outlined,
                           label: 'Loan Repayment',
                           isSelected: _target == _ContributionTarget.loanRepayment,
+                          disabled: !hasLoans,
                           onTap: () => setState(() => _target = _ContributionTarget.loanRepayment),
                         ),
                       ),
@@ -204,6 +222,20 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
                       selectedLoanId: _selectedLoanId,
                       onChanged: (id) => setState(() => _selectedLoanId = id),
                     ),
+                ],
+                const SizedBox(height: 20),
+                PaymentMethodSelector(
+                  selected: _paymentMethod,
+                  onSelected: (m) => setState(() => _paymentMethod = m),
+                ),
+                if (_needsMomoNumber) ...[
+                  const SizedBox(height: 16),
+                  CustomTextField(
+                    label: '${_paymentMethod} Number',
+                    controller: _momoController,
+                    keyboardType: TextInputType.phone,
+                    prefixIcon: const Icon(Icons.phone_android_outlined),
+                  ),
                 ],
                 const SizedBox(height: 20),
                 CustomTextField(
@@ -231,10 +263,6 @@ class _MakeContributionScreenState extends ConsumerState<MakeContributionScreen>
                   }).toList(),
                 ),
                 const SizedBox(height: 24),
-                PaymentMethodSelector(
-                  selected: _paymentMethod,
-                  onSelected: (m) => setState(() => _paymentMethod = m),
-                ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -278,45 +306,50 @@ class _ContributionTypeCard extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.disabled = false,
   });
 
   final IconData icon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool disabled;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.08)
-              : AppColors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 2 : 1,
+    return Opacity(
+      opacity: disabled ? 0.4 : 1.0,
+      child: GestureDetector(
+        onTap: disabled ? null : onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppColors.primary.withValues(alpha: 0.08)
+                : AppColors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? AppColors.primary : AppColors.border,
+              width: isSelected ? 2 : 1,
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? AppColors.primary : AppColors.mediumGray,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                color: AppColors.darkGray,
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? AppColors.primary : AppColors.mediumGray,
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: AppColors.darkGray,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

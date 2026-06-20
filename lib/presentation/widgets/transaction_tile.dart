@@ -63,6 +63,16 @@ class TransactionTile extends StatelessWidget {
                   Formatters.date(transaction.date),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
+                if (transaction.initiatedBy != null)
+                  Text(
+                    'By ${transaction.initiatedBy}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.lightGray,
+                          fontSize: 11,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
           ),

@@ -35,12 +35,12 @@ class BalanceText extends ConsumerWidget {
         GestureDetector(
           onTap: () async {
             if (isVisible) {
-              ref.read(balanceVisibleProvider.notifier).state = false;
+              ref.read(balanceVisibleProvider.notifier).set(false);
               return;
             }
             final unlocked = await _showPinDialog(context);
             if (unlocked) {
-              ref.read(balanceVisibleProvider.notifier).state = true;
+              ref.read(balanceVisibleProvider.notifier).set(true);
             }
           },
           child: Icon(

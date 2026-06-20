@@ -105,19 +105,19 @@ class DashboardScreen extends ConsumerWidget {
                       children: [
                         Expanded(
                           flex: 3,
-                          child: MriScoreCard(
-                            score: dashboard.mriScore,
-                            trend: dashboard.mriTrend,
-                            compact: true,
-                            onTap: () => context.push(AppRoutes.mriScore),
+                          child: _TotalBalanceCard(
+                            totalBalance: dashboard.totalBalance,
+                            onTap: () => context.push(AppRoutes.savings),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           flex: 2,
-                          child: _TotalBalanceCard(
-                            totalBalance: dashboard.totalBalance,
-                            onTap: () => context.push(AppRoutes.savings),
+                          child: MriScoreCard(
+                            score: dashboard.mriScore,
+                            trend: dashboard.mriTrend,
+                            compact: true,
+                            onTap: () => context.push(AppRoutes.mriScore),
                           ),
                         ),
                       ],
@@ -170,51 +170,6 @@ class DashboardScreen extends ConsumerWidget {
                           icon: Icons.account_balance_wallet_outlined,
                           iconColor: AppColors.primary,
                           onTap: () => context.push(AppRoutes.walletAccounts),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.purpleSurface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.purple.withValues(alpha: 0.2)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.event, color: AppColors.purple),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    AppStrings.contributionDue,
-                                    style: Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                  Text(
-                                    Formatters.date(dashboard.nextPaymentDate),
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          color: AppColors.purple,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            BalanceText(
-                              dashboard.currentPayout,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                              iconColor: AppColors.purple,
-                            ),
-                          ],
                         ),
                       ],
                     ),

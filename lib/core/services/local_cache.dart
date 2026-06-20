@@ -26,6 +26,16 @@ class LocalCache {
     }
   }
 
+  Future<void> writeBool(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
+
+  Future<bool> readBool(String key, {bool defaultValue = false}) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(key) ?? defaultValue;
+  }
+
   /// Drop all cached entries (e.g. on logout, so one account never serves
   /// another's stale data offline).
   Future<void> clear() async {
