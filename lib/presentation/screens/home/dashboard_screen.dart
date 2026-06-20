@@ -775,95 +775,62 @@ class _TotalBalanceCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Stack(
-                children: [
-                  // Decorative background circles
-                  Positioned(
-                    right: -24,
-                    top: -24,
-                    child: Container(
-                      width: 90,
-                      height: 90,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(5),
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.white.withValues(alpha: 0.07),
+                        color: AppColors.white.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: const Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: AppColors.white,
+                        size: 12,
                       ),
                     ),
-                  ),
-                  Positioned(
-                    right: 16,
-                    bottom: -32,
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.white.withValues(alpha: 0.05),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Total Balance',
+                      style: TextStyle(
+                        color: AppColors.white.withValues(alpha: 0.88),
+                        fontSize: w < 160 ? 10 : 11,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: BalanceText(
+                    totalBalance,
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontSize: w < 160 ? 17 : 21,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
+                    iconColor: AppColors.white,
                   ),
-                  // Content
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(5),
-                            decoration: BoxDecoration(
-                              color: AppColors.white.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(7),
-                            ),
-                            child: const Icon(
-                              Icons.account_balance_wallet_rounded,
-                              color: AppColors.white,
-                              size: 12,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Total Balance',
-                            style: TextStyle(
-                              color: AppColors.white.withValues(alpha: 0.88),
-                              fontSize: w < 160 ? 10 : 11,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: BalanceText(
-                          totalBalance,
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontSize: w < 160 ? 17 : 21,
-                            fontWeight: FontWeight.w800,
-                            height: 1.1,
-                          ),
-                          iconColor: AppColors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Savings + Wallet',
-                        style: TextStyle(
-                          color: AppColors.blush.withValues(alpha: 0.88),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                    ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Savings + Wallet',
+                  style: TextStyle(
+                    color: AppColors.blush.withValues(alpha: 0.88),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0.1,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           );
         },
