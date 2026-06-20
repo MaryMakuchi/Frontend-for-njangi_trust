@@ -758,82 +758,46 @@ class _TotalBalanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final w = constraints.maxWidth;
-          return Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(w < 160 ? 12 : 16),
-            decoration: BoxDecoration(
-              gradient: AppColors.richGradient,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.indigo.withValues(alpha: 0.35),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: AppColors.goldGradient,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Total Balance',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.white.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        color: AppColors.white.withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(7),
-                      ),
-                      child: const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        color: AppColors.white,
-                        size: 12,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Total Balance',
-                      style: TextStyle(
-                        color: AppColors.white.withValues(alpha: 0.88),
-                        fontSize: w < 160 ? 10 : 11,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: BalanceText(
-                    totalBalance,
-                    style: TextStyle(
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: BalanceText(
+                totalBalance,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.white,
-                      fontSize: w < 160 ? 17 : 21,
                       fontWeight: FontWeight.w800,
-                      height: 1.1,
                     ),
-                    iconColor: AppColors.white,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Savings + Wallet',
-                  style: TextStyle(
-                    color: AppColors.blush.withValues(alpha: 0.88),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-              ],
+                iconColor: AppColors.white,
+              ),
             ),
-          );
-        },
+            const SizedBox(height: 4),
+            Text(
+              'Savings + Wallet',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.white.withValues(alpha: 0.85),
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }

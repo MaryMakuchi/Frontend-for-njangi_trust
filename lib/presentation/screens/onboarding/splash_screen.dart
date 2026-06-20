@@ -60,7 +60,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const BrandLogo(size: 140, onLight: true),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.10),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    width: 2,
+                  ),
+                ),
+                child: const BrandLogo(size: 120, onLight: true),
+              ),
               const SizedBox(height: 24),
               Text(
                 AppStrings.appName.toUpperCase(),
