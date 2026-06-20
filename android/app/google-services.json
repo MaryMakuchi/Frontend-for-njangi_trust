@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "364540574109",
+    "project_id": "nkap-46d6b",
+    "storage_bucket": "nkap-46d6b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:364540574109:android:33abe31150af59d18d5774",
+        "android_client_info": {
+          "package_name": "com.njangitrust.njangi_trust"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCR-dgD0HYXayF5gEc7gpyq0lhOL-TH_20"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
