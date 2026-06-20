@@ -104,20 +104,20 @@ class DashboardScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
-                          flex: 3,
-                          child: _TotalBalanceCard(
-                            totalBalance: dashboard.totalBalance,
-                            onTap: () => context.push(AppRoutes.savings),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
                           flex: 2,
                           child: MriScoreCard(
                             score: dashboard.mriScore,
                             trend: dashboard.mriTrend,
                             compact: true,
                             onTap: () => context.push(AppRoutes.mriScore),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 3,
+                          child: _TotalBalanceCard(
+                            totalBalance: dashboard.totalBalance,
+                            onTap: () => context.push(AppRoutes.savings),
                           ),
                         ),
                       ],
