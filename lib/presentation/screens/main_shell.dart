@@ -7,7 +7,7 @@ import '../../core/constants/app_strings.dart';
 import '../providers/providers.dart';
 import '../routes/app_router.dart';
 
-const _kIdleTimeout = Duration(minutes: 1);
+const _kIdleTimeout = Duration(minutes: 3);
 const _kWarningDuration = Duration(seconds: 10);
 
 class MainShell extends ConsumerStatefulWidget {
