@@ -21,15 +21,9 @@ class DefaultFirebaseOptions {
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for android - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         return macos;
       case TargetPlatform.windows:
@@ -73,5 +67,22 @@ class DefaultFirebaseOptions {
     authDomain: 'nkap-46d6b.firebaseapp.com',
     storageBucket: 'nkap-46d6b.firebasestorage.app',
     measurementId: 'G-1XFRGZ257W',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyAYvcctY6s0EuWlQYRTZl_n_LiixE5Enk4',
+    appId: '1:364540574109:ios:bea79487d5a2e1b78d5774',
+    messagingSenderId: '364540574109',
+    projectId: 'nkap-46d6b',
+    storageBucket: 'nkap-46d6b.firebasestorage.app',
+    iosBundleId: 'com.njangitrust.njangiTrust',
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyCR-dgD0HYXayF5gEc7gpyq0lhOL-TH_20',
+    appId: '1:364540574109:android:33abe31150af59d18d5774',
+    messagingSenderId: '364540574109',
+    projectId: 'nkap-46d6b',
+    storageBucket: 'nkap-46d6b.firebasestorage.app',
   );
 }
