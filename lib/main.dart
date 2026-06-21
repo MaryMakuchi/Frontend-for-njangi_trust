@@ -25,6 +25,14 @@ class NjangiTrustApp extends ConsumerStatefulWidget {
 class _NjangiTrustAppState extends ConsumerState<NjangiTrustApp> {
   bool _pushInitialized = false;
 
+  void _initPushFor(GoRouter router) {
+    if (_pushInitialized) return;
+    _pushInitialized = true;
+    ref.read(notificationServiceProvider).initialize(
+          onOpen: (message) => _handlePushTap(router, message.data),
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
@@ -33,15 +41,18 @@ class _NjangiTrustAppState extends ConsumerState<NjangiTrustApp> {
     // taps on notifications to the relevant screen. Runs once per session.
     ref.listen<AsyncValue<UserEntity?>>(authStateProvider, (_, next) {
       final user = next.valueOrNull;
-      if (user != null && !_pushInitialized) {
-        _pushInitialized = true;
-        ref.read(notificationServiceProvider).initialize(
-              onOpen: (message) => _handlePushTap(router, message.data),
-            );
+      if (user != null) {
+        _initPushFor(router);
       } else if (user == null) {
         _pushInitialized = false;
       }
     });
+
+    // Handle the case where the session was already restored before the
+    // listener above attached (auto-login on app start) — register now.
+    if (ref.read(authStateProvider).valueOrNull != null) {
+      _initPushFor(router);
+    }
 
     return MaterialApp.router(
       title: 'Nkap',

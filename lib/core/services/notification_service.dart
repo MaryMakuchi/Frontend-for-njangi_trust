@@ -23,9 +23,14 @@ class NotificationService {
   /// push (including one that launched the app from terminated state).
   Future<void> initialize({void Function(RemoteMessage message)? onOpen}) async {
     try {
-      await _messaging.requestPermission(alert: true, badge: true, sound: true);
+      debugPrint('[Push] initializing…');
+      final settings = await _messaging.requestPermission(
+          alert: true, badge: true, sound: true);
+      debugPrint('[Push] permission: ${settings.authorizationStatus}');
 
       final token = await _messaging.getToken();
+      debugPrint('[Push] FCM token: '
+          '${token == null ? "NULL" : "${token.substring(0, 12)}…"}');
       if (token != null) {
         await _register(token);
       }
@@ -36,7 +41,7 @@ class NotificationService {
       if (initial != null) onOpen?.call(initial);
     } catch (e) {
       // Push unavailable (e.g. Firebase not configured) — degrade gracefully.
-      debugPrint('Push notifications unavailable: $e');
+      debugPrint('[Push] notifications unavailable: $e');
     }
   }
 
@@ -44,8 +49,9 @@ class NotificationService {
     try {
       await _repository.registerDeviceToken(token, platform: _platform());
       _registeredToken = token;
+      debugPrint('[Push] device token registered with backend ✓');
     } catch (e) {
-      debugPrint('Could not register device token: $e');
+      debugPrint('[Push] could not register device token: $e');
     }
   }
 
