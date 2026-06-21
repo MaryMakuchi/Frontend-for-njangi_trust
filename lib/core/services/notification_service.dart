@@ -21,7 +21,12 @@ class NotificationService {
   /// Request permission, register this device's token with the backend, and
   /// start listening for messages. [onOpen] is called when the user taps a
   /// push (including one that launched the app from terminated state).
-  Future<void> initialize({void Function(RemoteMessage message)? onOpen}) async {
+  /// [onForeground] is called when a message arrives while the app is open and
+  /// in the foreground (FCM does not show a system banner in that case).
+  Future<void> initialize({
+    void Function(RemoteMessage message)? onOpen,
+    void Function(RemoteMessage message)? onForeground,
+  }) async {
     try {
       debugPrint('[Push] initializing…');
       final settings = await _messaging.requestPermission(
@@ -36,6 +41,7 @@ class NotificationService {
       }
       _messaging.onTokenRefresh.listen(_register);
 
+      FirebaseMessaging.onMessage.listen((m) => onForeground?.call(m));
       FirebaseMessaging.onMessageOpenedApp.listen((m) => onOpen?.call(m));
       final initial = await _messaging.getInitialMessage();
       if (initial != null) onOpen?.call(initial);

@@ -1,6 +1,8 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'core/constants/app_colors.dart';
 import 'core/services/firebase_init.dart';
 import 'core/theme/app_theme.dart';
 import 'domain/entities/user_entity.dart';
@@ -24,13 +26,61 @@ class NjangiTrustApp extends ConsumerStatefulWidget {
 
 class _NjangiTrustAppState extends ConsumerState<NjangiTrustApp> {
   bool _pushInitialized = false;
+  final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
   void _initPushFor(GoRouter router) {
     if (_pushInitialized) return;
     _pushInitialized = true;
     ref.read(notificationServiceProvider).initialize(
           onOpen: (message) => _handlePushTap(router, message.data),
+          onForeground: (message) => _showForegroundBanner(router, message),
         );
+  }
+
+  /// Show an in-app banner when a push arrives while the app is open, since FCM
+  /// suppresses the system notification in the foreground. Tapping "View"
+  /// routes to the same screen a tapped system notification would.
+  void _showForegroundBanner(GoRouter router, RemoteMessage message) {
+    final notif = message.notification;
+    final title = notif?.title ?? 'New notification';
+    final body = notif?.body ?? '';
+
+    // Keep the unread badge/count in sync with the freshly-arrived message.
+    ref.invalidate(unreadNotificationCountProvider);
+
+    final messenger = _messengerKey.currentState;
+    if (messenger == null) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          backgroundColor: AppColors.primary,
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (body.isNotEmpty)
+                Text(
+                  body,
+                  style: const TextStyle(color: AppColors.white),
+                ),
+            ],
+          ),
+          action: SnackBarAction(
+            label: 'View',
+            textColor: AppColors.white,
+            onPressed: () => _handlePushTap(router, message.data),
+          ),
+        ),
+      );
   }
 
   @override
@@ -58,6 +108,7 @@ class _NjangiTrustAppState extends ConsumerState<NjangiTrustApp> {
       title: 'Nkap',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      scaffoldMessengerKey: _messengerKey,
       routerConfig: router,
     );
   }
