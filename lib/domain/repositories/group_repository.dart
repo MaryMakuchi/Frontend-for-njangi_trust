@@ -41,7 +41,7 @@ abstract class GroupRepository {
     String? playWeekOfMonth,
     String? playDeadlineTime,
   });
-  Future<PlayNjangiResultEntity> playNjangi(String groupId, {String source = 'wallet'});
+  Future<PlayNjangiResultEntity> playNjangi(String groupId, {String source = 'wallet', String? linkedAccountId});
 
   // Schedule, due dates, preview & ledger
   Future<List<DueDateEntity>> getDueDates({String horizon = '3m'});

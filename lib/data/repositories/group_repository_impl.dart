@@ -234,6 +234,7 @@ class GroupRepositoryImpl implements GroupRepository {
   Future<PlayNjangiResultEntity> playNjangi(
     String groupId, {
     String source = 'wallet',
+    String? linkedAccountId,
   }) async {
     if (AppConstants.useMockData) {
       final group = MockData.groups.firstWhere((g) => g.id == groupId);
@@ -248,7 +249,10 @@ class GroupRepositoryImpl implements GroupRepository {
 
     final response = await _api.post(
       '/groups/$groupId/play/',
-      body: {'source': source},
+      body: {
+        'source': source,
+        if (linkedAccountId != null) 'linked_account_id': linkedAccountId,
+      },
     );
     return PlayNjangiResultModel.fromJson(parseJsonResponse(response));
   }

@@ -8,6 +8,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/utils/njangi_hype.dart';
 import '../../../domain/entities/due_date_entity.dart';
 import '../../../domain/entities/group_entity.dart';
+import '../../../domain/entities/linked_account_entity.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/balance_text.dart';
@@ -445,21 +446,36 @@ class _PlayNjangiConfirmSheet extends ConsumerStatefulWidget {
 
 class _PlayNjangiConfirmSheetState extends ConsumerState<_PlayNjangiConfirmSheet> {
   bool _isLoading = false;
-
-  // Display label -> source value passed to playNjangi.
-  static const Map<String, String> _sources = {
-    'Wallet': 'wallet',
-    'MoMo': 'momo',
-    'Bank': 'bank',
-  };
   String _source = 'wallet';
+  LinkedAccountEntity? _selectedAccount;
+  final _manualController = TextEditingController();
+
+  bool get _isExternalSource => _source == 'momo' || _source == 'bank';
+  bool get _credentialReady =>
+      !_isExternalSource ||
+      _selectedAccount != null ||
+      _manualController.text.trim().isNotEmpty;
+
+  @override
+  void dispose() {
+    _manualController.dispose();
+    super.dispose();
+  }
 
   Future<void> _confirmAndPlay() async {
+    if (!_credentialReady) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select or enter an account')),
+      );
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       final result = await ref
           .read(groupRepositoryProvider)
-          .playNjangi(widget.group.id, source: _source);
+          .playNjangi(widget.group.id,
+              source: _source,
+              linkedAccountId: _selectedAccount?.id);
       ref.invalidate(groupsProvider);
       ref.invalidate(dashboardProvider);
 
@@ -645,20 +661,56 @@ class _PlayNjangiConfirmSheetState extends ConsumerState<_PlayNjangiConfirmSheet
           const SizedBox(height: 8),
           Row(
             children: [
-              for (final entry in _sources.entries)
+              for (final entry in {'Wallet': 'wallet', 'MoMo': 'momo', 'Bank': 'bank'}.entries)
                 Expanded(
-                  child: RadioListTile<String>(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    title: Text(entry.key,
-                        style: Theme.of(context).textTheme.bodySmall),
-                    value: entry.value,
-                    groupValue: _source,
-                    onChanged: (v) => setState(() => _source = v!),
+                  child: GestureDetector(
+                    onTap: () => setState(() {
+                      _source = entry.value;
+                      _selectedAccount = null;
+                      _manualController.clear();
+                    }),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _source == entry.value
+                            ? AppColors.purpleSurface
+                            : AppColors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _source == entry.value
+                              ? AppColors.purple
+                              : AppColors.border,
+                          width: _source == entry.value ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Text(
+                        entry.key,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: _source == entry.value
+                                  ? AppColors.purple
+                                  : null,
+                              fontWeight: _source == entry.value
+                                  ? FontWeight.w700
+                                  : null,
+                            ),
+                      ),
+                    ),
                   ),
                 ),
             ],
           ),
+          if (_isExternalSource) ...[
+            const SizedBox(height: 12),
+            _PlayNjangiAccountPicker(
+              isMomo: _source == 'momo',
+              selected: _selectedAccount,
+              manualController: _manualController,
+              onAccountSelected: (a) => setState(() => _selectedAccount = a),
+              onManualChanged: () => setState(() => _selectedAccount = null),
+            ),
+          ],
           const SizedBox(height: 12),
           CustomButton(
             label: 'Confirm & Play',
@@ -801,4 +853,108 @@ class _TotalBalanceCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PlayNjangiAccountPicker extends ConsumerStatefulWidget {
+  const _PlayNjangiAccountPicker({
+    required this.isMomo,
+    required this.selected,
+    required this.manualController,
+    required this.onAccountSelected,
+    required this.onManualChanged,
+  });
+
+  final bool isMomo;
+  final LinkedAccountEntity? selected;
+  final TextEditingController manualController;
+  final ValueChanged<LinkedAccountEntity?> onAccountSelected;
+  final VoidCallback onManualChanged;
+
+  @override
+  ConsumerState<_PlayNjangiAccountPicker> createState() =>
+      _PlayNjangiAccountPickerState();
+}
+
+class _PlayNjangiAccountPickerState
+    extends ConsumerState<_PlayNjangiAccountPicker> {
+  bool _useManual = false;
+
+  List<LinkedAccountEntity> _filter(List<LinkedAccountEntity> all) => widget.isMomo
+      ? all.where((a) => a.accountType == LinkedAccountType.mobileMoney).toList()
+      : all.where((a) => a.accountType == LinkedAccountType.bank).toList();
+
+  @override
+  Widget build(BuildContext context) {
+    final accountsAsync = ref.watch(linkedAccountsProvider);
+
+    return accountsAsync.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (_, __) => _manual(),
+      data: (all) {
+        final filtered = _filter(all);
+        if (filtered.isEmpty || _useManual) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _manual(),
+              if (filtered.isNotEmpty)
+                TextButton(
+                  onPressed: () => setState(() => _useManual = false),
+                  child: const Text('Use a saved account'),
+                ),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Select account',
+                style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              value: widget.selected?.id,
+              decoration: InputDecoration(
+                prefixIcon: Icon(widget.isMomo
+                    ? Icons.phone_android_outlined
+                    : Icons.account_balance_outlined),
+              ),
+              items: filtered
+                  .map((a) => DropdownMenuItem(
+                        value: a.id,
+                        child: Text(
+                          '${a.accountName}  •  ${a.accountNumber}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ))
+                  .toList(),
+              onChanged: (id) {
+                widget.onAccountSelected(
+                    filtered.firstWhere((a) => a.id == id));
+              },
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() => _useManual = true);
+                widget.onAccountSelected(null);
+              },
+              child: const Text('Use a different number'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _manual() => TextField(
+        controller: widget.manualController,
+        keyboardType:
+            widget.isMomo ? TextInputType.phone : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: widget.isMomo ? 'Phone Number' : 'Account Number',
+          prefixIcon: Icon(widget.isMomo
+              ? Icons.phone_android_outlined
+              : Icons.account_balance_outlined),
+        ),
+        onChanged: (_) => widget.onManualChanged(),
+      );
 }
