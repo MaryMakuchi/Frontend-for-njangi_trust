@@ -281,9 +281,28 @@ class WalletAccountsScreen extends ConsumerWidget {
                       } catch (e) {
                         setState(() => isLoading = false);
                         if (dialogContext.mounted) {
-                          final message = e is ApiException ? e.message : AppStrings.genericError;
-                          ScaffoldMessenger.of(dialogContext)
-                              .showSnackBar(SnackBar(content: Text(message)));
+                          if (e is ApiException && e.loanBlocked) {
+                            Navigator.of(dialogContext).pop();
+                            showDialog(
+                              context: dialogContext,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Withdrawal Blocked'),
+                                content: const Text(
+                                  'You have an active loan. Withdrawals are blocked until your loan is fully repaid.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          } else {
+                            final message = e is ApiException ? e.message : AppStrings.genericError;
+                            ScaffoldMessenger.of(dialogContext)
+                                .showSnackBar(SnackBar(content: Text(message)));
+                          }
                         }
                       }
                     },

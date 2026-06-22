@@ -541,4 +541,67 @@ class GroupRepositoryImpl implements GroupRepository {
     final json = parseJsonResponse(response);
     return json['status'] as String? ?? '';
   }
+
+  @override
+  Future<void> startElection(String groupId) async {
+    await _api.post('/groups/$groupId/election/start/', body: const {});
+  }
+
+  @override
+  Future<ElectionEntity?> getElection(String groupId) async {
+    final response = await _api.get('/groups/$groupId/election/');
+    final json = parseJsonResponse(response);
+    // If election key exists and is null, no active election
+    if (json.containsKey('election') && json['election'] == null) return null;
+    return ElectionModel.fromJson(json);
+  }
+
+  @override
+  Future<void> nominateForElection({
+    required String groupId,
+    required String nomineeUsername,
+    required String role,
+  }) async {
+    await _api.post(
+      '/groups/$groupId/election/nominate/',
+      body: {'nominee_username': nomineeUsername, 'role': role},
+    );
+  }
+
+  @override
+  Future<void> advanceElection(String groupId) async {
+    await _api.post('/groups/$groupId/election/advance/', body: const {});
+  }
+
+  @override
+  Future<void> voteInElection({
+    required String groupId,
+    required String nomineeId,
+    required String role,
+  }) async {
+    await _api.post(
+      '/groups/$groupId/election/vote/',
+      body: {'nominee_id': nomineeId, 'role': role},
+    );
+  }
+
+  @override
+  Future<List<UserSearchResultEntity>> searchUsers(String query) async {
+    final response = await _api.get('/groups/users/search/?q=${Uri.encodeQueryComponent(query)}');
+    final json = parseJsonResponse(response);
+    final results = json['results'] as List? ?? [];
+    return results
+        .map((e) => UserSearchResultModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<List<GroupSlotEntity>> getMySlots(String groupId) async {
+    final response = await _api.get('/groups/$groupId/my-slots/');
+    final json = parseJsonResponse(response);
+    final slots = json['slots'] as List? ?? [];
+    return slots
+        .map((e) => GroupSlotModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

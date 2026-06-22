@@ -640,12 +640,19 @@ class _OverviewTab extends ConsumerWidget {
             ),
           ),
         ),
+        // My Slots section - shows all memberships for the current user
+        _MySlotsSection(groupId: group.id),
+
         if (group.rules != null) ...[
           const SizedBox(height: 16),
           Text('Rules', style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
           Text(group.rules!, style: Theme.of(context).textTheme.bodyMedium),
         ],
+
+        // Board Election section
+        _BoardElectionSection(group: group),
+
         if (isPresident) ...[
           const SizedBox(height: 24),
           Text(
@@ -1220,11 +1227,456 @@ class _MembersTab extends ConsumerWidget {
     switch (role) {
       case GroupRole.president:
         return 'President';
+      case GroupRole.vicePresident:
+        return 'Vice President';
       case GroupRole.treasurer:
         return 'Treasurer';
+      case GroupRole.secretary:
+        return 'Secretary';
+      case GroupRole.auditor:
+        return 'Auditor';
       case GroupRole.member:
         return 'Member';
     }
+  }
+}
+
+// ─── My Slots Section ───────────────────────────────────────────────────────
+
+final _mySlotsProvider = FutureProvider.autoDispose.family<List<GroupSlotEntity>, String>(
+  (ref, groupId) => ref.watch(groupRepositoryProvider).getMySlots(groupId),
+);
+
+class _MySlotsSection extends ConsumerWidget {
+  const _MySlotsSection({required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final slotsAsync = ref.watch(_mySlotsProvider(groupId));
+
+    return slotsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (slots) {
+        if (slots.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            Text('My Slots in This Group',
+                style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            for (final slot in slots)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.purpleSurface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: slot.isCurrentBeneficiary
+                          ? AppColors.accent.withValues(alpha: 0.2)
+                          : AppColors.primary.withValues(alpha: 0.1),
+                      child: Text(
+                        slot.slotName.isNotEmpty ? slot.slotName[0] : '?',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(slot.slotName,
+                              style: const TextStyle(fontWeight: FontWeight.w600)),
+                          Text(
+                            slot.role.replaceAll('_', ' ').toUpperCase() +
+                                (slot.rotationPosition != null
+                                    ? ' · Position ${slot.rotationPosition}'
+                                    : ''),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (slot.isCurrentBeneficiary)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'Beneficiary',
+                          style: TextStyle(fontSize: 10, color: AppColors.accent),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ─── Board Election Section ──────────────────────────────────────────────────
+
+final _electionProvider = FutureProvider.autoDispose.family<ElectionEntity?, String>(
+  (ref, groupId) => ref.watch(groupRepositoryProvider).getElection(groupId),
+);
+
+class _BoardElectionSection extends ConsumerWidget {
+  const _BoardElectionSection({required this.group});
+
+  final GroupEntity group;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authStateProvider).valueOrNull;
+    if (user == null) return const SizedBox.shrink();
+
+    final myMembership = group.members.where((m) => m.id == user.id);
+    final isPresident = myMembership.isNotEmpty &&
+        myMembership.first.role == GroupRole.president;
+
+    final electionAsync = ref.watch(_electionProvider(group.id));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        Text('Board Election', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        electionAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Text('Error: $e'),
+          data: (election) {
+            if (election == null || election.id.isEmpty) {
+              // No active election
+              if (isPresident) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'No election is currently in progress.',
+                      style: TextStyle(color: AppColors.mediumGray),
+                    ),
+                    const SizedBox(height: 8),
+                    CustomButton(
+                      label: 'Start Election',
+                      icon: Icons.how_to_vote_outlined,
+                      onPressed: () => _startElection(context, ref),
+                    ),
+                  ],
+                );
+              }
+              return const Text(
+                'No board election is currently in progress.',
+                style: TextStyle(color: AppColors.mediumGray),
+              );
+            }
+
+            return _ElectionPanel(group: group, election: election, isPresident: isPresident);
+          },
+        ),
+      ],
+    );
+  }
+
+  Future<void> _startElection(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(groupRepositoryProvider).startElection(group.id);
+      ref.invalidate(_electionProvider(group.id));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Election started. Nominations are open.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        final message = e is ApiException ? e.message : AppStrings.genericError;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    }
+  }
+}
+
+class _ElectionPanel extends ConsumerStatefulWidget {
+  const _ElectionPanel({
+    required this.group,
+    required this.election,
+    required this.isPresident,
+  });
+
+  final GroupEntity group;
+  final ElectionEntity election;
+  final bool isPresident;
+
+  @override
+  ConsumerState<_ElectionPanel> createState() => _ElectionPanelState();
+}
+
+class _ElectionPanelState extends ConsumerState<_ElectionPanel> {
+  static const _allRoles = [
+    'president', 'vice_president', 'treasurer', 'secretary', 'auditor',
+  ];
+  static const _roleLabels = {
+    'president': 'President',
+    'vice_president': 'Vice President',
+    'treasurer': 'Treasurer',
+    'secretary': 'Secretary',
+    'auditor': 'Auditor',
+  };
+
+  bool _isAdvancing = false;
+  bool _isNominating = false;
+
+  final _nomineeController = TextEditingController();
+  String _selectedRole = 'president';
+  List<UserSearchResultEntity> _searchResults = [];
+  bool _isSearching = false;
+
+  @override
+  void dispose() {
+    _nomineeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _searchUsers(String query) async {
+    if (query.length < 2) {
+      setState(() => _searchResults = []);
+      return;
+    }
+    setState(() => _isSearching = true);
+    try {
+      final results = await ref.read(groupRepositoryProvider).searchUsers(query);
+      if (mounted) setState(() => _searchResults = results);
+    } catch (_) {} finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
+  Future<void> _nominate(String username) async {
+    setState(() => _isNominating = true);
+    try {
+      await ref.read(groupRepositoryProvider).nominateForElection(
+            groupId: widget.group.id,
+            nomineeUsername: username,
+            role: _selectedRole,
+          );
+      ref.invalidate(_electionProvider(widget.group.id));
+      _nomineeController.clear();
+      setState(() => _searchResults = []);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Nominated $username for ${_roleLabels[_selectedRole]}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final message = e is ApiException ? e.message : AppStrings.genericError;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) setState(() => _isNominating = false);
+    }
+  }
+
+  Future<void> _vote(String nomineeId, String role) async {
+    try {
+      await ref.read(groupRepositoryProvider).voteInElection(
+            groupId: widget.group.id,
+            nomineeId: nomineeId,
+            role: role,
+          );
+      ref.invalidate(_electionProvider(widget.group.id));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Vote cast for ${_roleLabels[role]}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final message = e is ApiException ? e.message : AppStrings.genericError;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    }
+  }
+
+  Future<void> _advanceElection() async {
+    setState(() => _isAdvancing = true);
+    try {
+      await ref.read(groupRepositoryProvider).advanceElection(widget.group.id);
+      ref.invalidate(_electionProvider(widget.group.id));
+      ref.invalidate(groupsProvider);
+      if (mounted) {
+        final nextStatus = widget.election.status == 'nominations' ? 'voting' : 'complete';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(
+            nextStatus == 'complete'
+                ? 'Election complete! Board roles have been assigned.'
+                : 'Election advanced to voting phase.',
+          )),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final message = e is ApiException ? e.message : AppStrings.genericError;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) setState(() => _isAdvancing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final election = widget.election;
+    final statusLabel = election.status == 'nominations'
+        ? 'Nominations Open'
+        : election.status == 'voting'
+            ? 'Voting Open'
+            : 'Complete';
+    final statusColor = election.status == 'nominations'
+        ? AppColors.primary
+        : election.status == 'voting'
+            ? AppColors.accent
+            : AppColors.success;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                statusLabel,
+                style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const Spacer(),
+            if (widget.isPresident && election.status != 'complete')
+              TextButton(
+                onPressed: _isAdvancing ? null : _advanceElection,
+                child: _isAdvancing
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(election.status == 'nominations'
+                        ? 'Start Voting'
+                        : 'Finalise Results'),
+              ),
+          ],
+        ),
+
+        // Nominations phase: show nomination form and current nominees
+        if (election.status == 'nominations') ...[
+          const SizedBox(height: 12),
+          Text('Nominate a Member', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _selectedRole,
+            decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder(), isDense: true),
+            items: _allRoles
+                .map((r) => DropdownMenuItem(value: r, child: Text(_roleLabels[r]!)))
+                .toList(),
+            onChanged: (v) { if (v != null) setState(() => _selectedRole = v); },
+          ),
+          const SizedBox(height: 8),
+          CustomTextField(
+            label: 'Search by username',
+            controller: _nomineeController,
+            onChanged: _searchUsers,
+          ),
+          if (_isSearching) const LinearProgressIndicator(),
+          if (_searchResults.isNotEmpty)
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                border: Border.all(color: AppColors.border),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: _searchResults.map((u) => ListTile(
+                  dense: true,
+                  title: Text(u.name),
+                  subtitle: Text('@${u.username}'),
+                  trailing: _isNominating
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.add_circle_outline, size: 20),
+                  onTap: _isNominating ? null : () => _nominate(u.username),
+                )).toList(),
+              ),
+            ),
+        ],
+
+        // Show nominees for all roles
+        const SizedBox(height: 12),
+        for (final role in _allRoles) ...[
+          if (election.nominations.containsKey(role) &&
+              election.nominations[role]!.isNotEmpty) ...[
+            Text(
+              _roleLabels[role]!,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+            const SizedBox(height: 4),
+            for (final nominee in election.nominations[role]!) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.purpleSurface,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 14,
+                      child: Text(nominee.nomineeName[0]),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(nominee.nomineeName,
+                              style: const TextStyle(fontWeight: FontWeight.w500)),
+                          Text('${nominee.nominationCount} nomination(s)',
+                              style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                    if (election.status == 'voting')
+                      election.myVotes[role] == nominee.nomineeId
+                          ? const Icon(Icons.check_circle, color: AppColors.success, size: 20)
+                          : TextButton(
+                              onPressed: () => _vote(nominee.nomineeId, role),
+                              child: const Text('Vote'),
+                            ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+          ],
+        ],
+      ],
+    );
   }
 }
 

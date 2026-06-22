@@ -113,6 +113,7 @@ class GroupMemberModel {
     return GroupMemberEntity(
       id: json['id'].toString(),
       name: json['name'] as String,
+      slotName: json['slot_name'] as String? ?? '',
       role: _parseRole(json['role'] as String?),
       mriScore: parseDouble(json['mri_score']),
       isCurrentBeneficiary: json['is_current_beneficiary'] as bool? ?? false,
@@ -127,10 +128,82 @@ class GroupMemberModel {
     switch (role) {
       case 'president':
         return GroupRole.president;
+      case 'vice_president':
+        return GroupRole.vicePresident;
       case 'treasurer':
         return GroupRole.treasurer;
+      case 'secretary':
+        return GroupRole.secretary;
+      case 'auditor':
+        return GroupRole.auditor;
       default:
         return GroupRole.member;
     }
+  }
+}
+
+class ElectionModel {
+  static ElectionEntity? fromJson(Map<String, dynamic> json) {
+    // The API returns {election: null} when no election is active
+    if (json['election'] == null && !json.containsKey('id')) {
+      return null;
+    }
+
+    final nominationsRaw = json['nominations'];
+    final myVotesRaw = json['my_votes'];
+
+    final nominationsJson = (nominationsRaw as Map?)?.cast<String, dynamic>() ?? {};
+    final myVotesJson = <String, String>{};
+    if (myVotesRaw is Map) {
+      myVotesRaw.forEach((k, v) {
+        myVotesJson[k.toString()] = v.toString();
+      });
+    }
+
+    final nominations = <String, List<ElectionNomineeEntity>>{};
+    nominationsJson.forEach((role, nominees) {
+      if (nominees is List) {
+        nominations[role] = nominees
+            .map((n) => ElectionNomineeEntity(
+                  nomineeId: n['nominee_id'].toString(),
+                  nomineeName: n['nominee_name'] as String,
+                  nominationCount: parseInt(n['nomination_count']),
+                ))
+            .toList();
+      }
+    });
+
+    return ElectionEntity(
+      id: json['id']?.toString() ?? '',
+      status: json['status'] as String? ?? '',
+      createdAt: parseDateTime(json['created_at']) ?? DateTime.now(),
+      nominations: nominations,
+      myVotes: myVotesJson,
+    );
+  }
+}
+
+class GroupSlotModel {
+  static GroupSlotEntity fromJson(Map<String, dynamic> json) {
+    return GroupSlotEntity(
+      membershipId: json['membership_id'].toString(),
+      slotName: json['slot_name'] as String? ?? '',
+      role: json['role'] as String? ?? 'member',
+      rotationPosition: json['rotation_position'] != null
+          ? parseInt(json['rotation_position'])
+          : null,
+      isCurrentBeneficiary: json['is_current_beneficiary'] as bool? ?? false,
+      joinedAt: parseDateTime(json['joined_at']) ?? DateTime.now(),
+    );
+  }
+}
+
+class UserSearchResultModel {
+  static UserSearchResultEntity fromJson(Map<String, dynamic> json) {
+    return UserSearchResultEntity(
+      id: json['id'].toString(),
+      username: json['username'] as String,
+      name: json['name'] as String,
+    );
   }
 }

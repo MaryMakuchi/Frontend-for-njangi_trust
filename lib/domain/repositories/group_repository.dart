@@ -91,4 +91,25 @@ abstract class GroupRepository {
     required String requestId,
     required String decision,
   });
+
+  // Board elections
+  Future<void> startElection(String groupId);
+  Future<ElectionEntity?> getElection(String groupId);
+  Future<void> nominateForElection({
+    required String groupId,
+    required String nomineeUsername,
+    required String role,
+  });
+  Future<void> advanceElection(String groupId);
+  Future<void> voteInElection({
+    required String groupId,
+    required String nomineeId,
+    required String role,
+  });
+
+  // User search (for nominations)
+  Future<List<UserSearchResultEntity>> searchUsers(String query);
+
+  // Multiple slots
+  Future<List<GroupSlotEntity>> getMySlots(String groupId);
 }

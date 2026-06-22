@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum GroupRole { president, treasurer, member }
+enum GroupRole { president, vicePresident, treasurer, secretary, auditor, member }
 
 class GroupMemberEntity extends Equatable {
   const GroupMemberEntity({
@@ -8,6 +8,7 @@ class GroupMemberEntity extends Equatable {
     required this.name,
     required this.role,
     required this.mriScore,
+    this.slotName = '',
     this.isCurrentBeneficiary = false,
     this.rotationPosition,
     this.pickCycle,
@@ -15,6 +16,7 @@ class GroupMemberEntity extends Equatable {
 
   final String id;
   final String name;
+  final String slotName;
   final GroupRole role;
   final double mriScore;
   final bool isCurrentBeneficiary;
@@ -25,12 +27,83 @@ class GroupMemberEntity extends Equatable {
   List<Object?> get props => [
         id,
         name,
+        slotName,
         role,
         mriScore,
         isCurrentBeneficiary,
         rotationPosition,
         pickCycle,
       ];
+}
+
+class ElectionNomineeEntity extends Equatable {
+  const ElectionNomineeEntity({
+    required this.nomineeId,
+    required this.nomineeName,
+    required this.nominationCount,
+  });
+
+  final String nomineeId;
+  final String nomineeName;
+  final int nominationCount;
+
+  @override
+  List<Object?> get props => [nomineeId, nomineeName, nominationCount];
+}
+
+class ElectionEntity extends Equatable {
+  const ElectionEntity({
+    required this.id,
+    required this.status,
+    this.createdAt,
+    this.nominations = const {},
+    this.myVotes = const {},
+  });
+
+  final String id;
+  final String status; // 'nominations' | 'voting' | 'complete'
+  final DateTime? createdAt;
+  final Map<String, List<ElectionNomineeEntity>> nominations;
+  final Map<String, String> myVotes; // role -> nomineeId
+
+  @override
+  List<Object?> get props => [id, status, createdAt, nominations, myVotes];
+}
+
+class UserSearchResultEntity extends Equatable {
+  const UserSearchResultEntity({
+    required this.id,
+    required this.username,
+    required this.name,
+  });
+
+  final String id;
+  final String username;
+  final String name;
+
+  @override
+  List<Object?> get props => [id, username, name];
+}
+
+class GroupSlotEntity extends Equatable {
+  const GroupSlotEntity({
+    required this.membershipId,
+    required this.slotName,
+    required this.role,
+    this.rotationPosition,
+    this.isCurrentBeneficiary = false,
+    required this.joinedAt,
+  });
+
+  final String membershipId;
+  final String slotName;
+  final String role;
+  final int? rotationPosition;
+  final bool isCurrentBeneficiary;
+  final DateTime joinedAt;
+
+  @override
+  List<Object?> get props => [membershipId, slotName, role, rotationPosition, isCurrentBeneficiary, joinedAt];
 }
 
 class CurrentPickerEntity extends Equatable {
