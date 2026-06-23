@@ -395,27 +395,6 @@ class WalletAccountsScreen extends ConsumerWidget {
                   ? null
                   : () async {
                       if (!formKey.currentState!.validate()) return;
-                      final confirmed = await showDialog<bool>(
-                        context: dialogContext,
-                        builder: (confirmContext) => AlertDialog(
-                          title: const Text('Verify Account'),
-                          content: const Text(
-                            'A fee of 50 CFA will be deducted from your Mobile Money '
-                            'to verify this account number. Do you want to continue?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.of(confirmContext).pop(false),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.of(confirmContext).pop(true),
-                              child: const Text('Continue'),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmed != true) return;
                       setState(() => isLoading = true);
                       try {
                         await ref.read(walletRepositoryProvider).addLinkedAccount(
