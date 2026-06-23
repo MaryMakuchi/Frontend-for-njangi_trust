@@ -118,7 +118,7 @@ class DashboardScreen extends ConsumerWidget {
                           flex: 2,
                           child: _TotalBalanceCard(
                             totalBalance: dashboard.totalBalance,
-                            onTap: () => context.push(AppRoutes.savings),
+                            onTap: () => context.push(AppRoutes.walletAccounts),
                           ),
                         ),
                       ],
@@ -316,7 +316,7 @@ class _PlayNjangiGroupsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final groupsAsync = ref.watch(groupsProvider);
 
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.only(
         left: 20,
         right: 20,

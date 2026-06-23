@@ -75,6 +75,7 @@ class GroupRepositoryImpl implements GroupRepository {
     required DateTime startDate,
     String? rules,
     double? targetAmount,
+    double? latePenalty,
     int durationMonths = 12,
     String pickingMode = 'random',
     String? playFrequency,
@@ -115,6 +116,7 @@ class GroupRepositoryImpl implements GroupRepository {
         'start_date': startDate.toIso8601String().split('T').first,
         if (rules != null && rules.isNotEmpty) 'rules': rules,
         if (targetAmount != null) 'target_amount': targetAmount,
+        if (latePenalty != null && latePenalty > 0) 'late_payment_penalty': latePenalty,
         'duration_months': durationMonths,
         'picking_mode': pickingMode,
         ...GroupModel.scheduleToJson(

@@ -24,6 +24,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
   final _membersController = TextEditingController(text: '20');
   final _rulesController = TextEditingController();
   final _targetAmountController = TextEditingController();
+  final _penaltyController = TextEditingController();
   final _durationController = TextEditingController(text: '12');
   String _frequency = AppConstants.contributionFrequencies.first;
   String _pickingMode = 'random';
@@ -83,6 +84,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
     _membersController.dispose();
     _rulesController.dispose();
     _targetAmountController.dispose();
+    _penaltyController.dispose();
     _durationController.dispose();
     super.dispose();
   }
@@ -118,6 +120,9 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
             targetAmount: _targetAmountController.text.trim().isEmpty
                 ? null
                 : double.parse(_targetAmountController.text.replaceAll(',', '')),
+            latePenalty: _penaltyController.text.trim().isEmpty
+                ? null
+                : double.parse(_penaltyController.text.replaceAll(',', '')),
             durationMonths: int.parse(_durationController.text),
             pickingMode: _pickingMode,
             playFrequency: _playFrequency,
@@ -218,6 +223,14 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
                 keyboardType: TextInputType.number,
                 inputFormatters: [ThousandsSeparatorInputFormatter()],
                 hint: 'The amount each member receives when it is their turn',
+              ),
+              const SizedBox(height: 16),
+              CustomTextField(
+                label: 'Late Payment Penalty (CFA, optional)',
+                controller: _penaltyController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [ThousandsSeparatorInputFormatter()],
+                hint: 'Fee charged when a member misses a contribution deadline',
               ),
               if (_pickersPerCycle > 0) ...[
                 const SizedBox(height: 8),

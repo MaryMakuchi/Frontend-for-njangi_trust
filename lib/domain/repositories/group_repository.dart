@@ -19,6 +19,7 @@ abstract class GroupRepository {
     required DateTime startDate,
     String? rules,
     double? targetAmount,
+    double? latePenalty,
     int durationMonths = 12,
     String pickingMode = 'random',
     String? playFrequency,

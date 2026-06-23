@@ -1626,6 +1626,7 @@ class _ElectionPanelState extends ConsumerState<_ElectionPanel> {
   String _selectedRole = 'president';
   List<UserSearchResultEntity> _searchResults = [];
   bool _isSearching = false;
+  bool _searchDone = false;
 
   @override
   void dispose() {
@@ -1638,11 +1639,13 @@ class _ElectionPanelState extends ConsumerState<_ElectionPanel> {
       setState(() => _searchResults = []);
       return;
     }
-    setState(() => _isSearching = true);
+    setState(() { _isSearching = true; _searchDone = false; });
     try {
       final results = await ref.read(groupRepositoryProvider).searchUsers(query);
-      if (mounted) setState(() => _searchResults = results);
-    } catch (_) {} finally {
+      if (mounted) setState(() { _searchResults = results; _searchDone = true; });
+    } catch (_) {
+      if (mounted) setState(() => _searchDone = true);
+    } finally {
       if (mounted) setState(() => _isSearching = false);
     }
   }
@@ -1806,6 +1809,27 @@ class _ElectionPanelState extends ConsumerState<_ElectionPanel> {
                 )).toList(),
               ),
             ),
+          if (_searchDone && !_isSearching && _searchResults.isEmpty && _nomineeController.text.length >= 2)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'No user found with that username.',
+                style: TextStyle(color: AppColors.error, fontSize: 12),
+              ),
+            ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: (_isNominating || _searchResults.isEmpty)
+                  ? null
+                  : () => _nominate(_searchResults.first.username),
+              icon: _isNominating
+                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white))
+                  : const Icon(Icons.how_to_reg_outlined, size: 18),
+              label: const Text('Nominate'),
+            ),
+          ),
         ],
 
         // Show nominees for all roles

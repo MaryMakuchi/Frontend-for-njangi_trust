@@ -20,7 +20,7 @@ class BrandLogo extends StatelessWidget {
   /// instead of white.
   final bool onLight;
 
-  static const String assetPath = 'assets/images/nkap_logo.png';
+  static const String assetPath = 'assets/images/app_icon.png';
 
   @override
   Widget build(BuildContext context) {
