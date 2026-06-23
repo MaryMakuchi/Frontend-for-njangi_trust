@@ -31,6 +31,7 @@ class GroupDetailsScreen extends ConsumerWidget {
   static const _tabOrder = [
     'overview',
     'members',
+    'board',
     'social fund',
     'ledger',
     'savings',
@@ -63,7 +64,7 @@ class GroupDetailsScreen extends ConsumerWidget {
           }
           final group = matches.first;
           return DefaultTabController(
-            length: 7,
+            length: 8,
             initialIndex: _initialIndex,
             // NestedScrollView lets the header scroll away ("collapse up")
             // while the tab bar stays pinned, giving more room to read each tab.
@@ -81,6 +82,7 @@ class GroupDetailsScreen extends ConsumerWidget {
                       tabs: [
                         Tab(text: 'Overview'),
                         Tab(text: 'Members'),
+                        Tab(text: 'Board'),
                         Tab(text: 'Social Fund'),
                         Tab(text: 'Ledger'),
                         Tab(text: 'Savings'),
@@ -95,10 +97,11 @@ class GroupDetailsScreen extends ConsumerWidget {
                 children: [
                   _OverviewTab(group: group),
                   _MembersTab(group: group),
+                  _BoardTab(group: group),
                   _SocialFundTab(group: group),
                   _LedgerTab(group: group),
                   _SavingsTab(group: group),
-                  const Center(child: Text('Group loans coming soon')),
+                  _LoansTab(group: group),
                   _ChatTab(group: group),
                 ],
               ),
@@ -640,6 +643,9 @@ class _OverviewTab extends ConsumerWidget {
             ),
           ),
         ),
+        // Payout History section
+        _PayoutHistorySection(groupId: group.id),
+
         // My Slots section - shows all memberships for the current user
         _MySlotsSection(groupId: group.id),
 
@@ -649,9 +655,6 @@ class _OverviewTab extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(group.rules!, style: Theme.of(context).textTheme.bodyMedium),
         ],
-
-        // Board Election section
-        _BoardElectionSection(group: group),
 
         if (isPresident) ...[
           const SizedBox(height: 24),
@@ -1258,9 +1261,29 @@ class _MySlotsSection extends ConsumerWidget {
 
     return slotsAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, __) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          Text('My Slots in This Group',
+              style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          const Text('You have 1 slot in this group.',
+              style: TextStyle(color: AppColors.mediumGray)),
+        ],
+      ),
       data: (slots) {
-        if (slots.isEmpty) return const SizedBox.shrink();
+        if (slots.isEmpty) return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            Text('My Slots in This Group',
+                style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            const Text('You have 1 slot in this group.',
+                style: TextStyle(color: AppColors.mediumGray)),
+          ],
+        );
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1321,6 +1344,166 @@ class _MySlotsSection extends ConsumerWidget {
                 ),
               ),
           ],
+        );
+      },
+    );
+  }
+}
+
+// ─── Payout History Section ──────────────────────────────────────────────────
+
+class _PayoutHistorySection extends ConsumerWidget {
+  const _PayoutHistorySection({required this.groupId});
+
+  final String groupId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ledgerAsync = ref.watch(
+      groupLedgerProvider((groupId: groupId, category: 'njangi')),
+    );
+
+    return ledgerAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (transactions) {
+        final payouts = transactions
+            .where((t) => t.type == TransactionType.payout)
+            .toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            Text('Payout History', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            if (payouts.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('No payouts yet.',
+                    style: TextStyle(color: AppColors.mediumGray)),
+              )
+            else
+              for (final payout in payouts)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppColors.successLight,
+                        child: Icon(Icons.arrow_downward,
+                            size: 18, color: AppColors.success),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(payout.title,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
+                            Text(Formatters.date(payout.date),
+                                style: Theme.of(context).textTheme.bodySmall),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        Formatters.currency(payout.amount),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ─── Board Tab ────────────────────────────────────────────────────────────────
+
+class _BoardTab extends ConsumerWidget {
+  const _BoardTab({required this.group});
+
+  final GroupEntity group;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: _BoardElectionSection(group: group),
+    );
+  }
+}
+
+// ─── Loans Tab ────────────────────────────────────────────────────────────────
+
+class _LoansTab extends ConsumerWidget {
+  const _LoansTab({required this.group});
+
+  final GroupEntity group;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ledgerAsync = ref.watch(
+      groupLedgerProvider((groupId: group.id, category: 'loans')),
+    );
+
+    return ledgerAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (transactions) {
+        final loanTxns = transactions
+            .where((t) =>
+                t.type == TransactionType.loanDisbursement ||
+                t.type == TransactionType.loanRepayment)
+            .toList();
+
+        if (loanTxns.isEmpty) {
+          return const Center(child: Text('No loan activity yet'));
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: loanTxns.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
+          itemBuilder: (context, i) {
+            final t = loanTxns[i];
+            return Card(
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: t.isCredit
+                      ? Colors.green.withValues(alpha: 0.15)
+                      : Colors.orange.withValues(alpha: 0.15),
+                  child: Icon(
+                    t.isCredit ? Icons.arrow_downward : Icons.arrow_upward,
+                    color: t.isCredit ? Colors.green : Colors.orange,
+                    size: 20,
+                  ),
+                ),
+                title: Text(t.title),
+                subtitle: Text(Formatters.date(t.date)),
+                trailing: Text(
+                  Formatters.currency(t.amount),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: t.isCredit ? Colors.green : AppColors.darkGray,
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
