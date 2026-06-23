@@ -243,7 +243,7 @@ final pendingLoanVotesProvider = FutureProvider<List<PendingLoanVoteEntity>>((re
 });
 
 final transactionsProvider = FutureProvider<List<TransactionEntity>>((ref) {
-  return ref.watch(transactionRepositoryProvider).getTransactions(status: 'verified');
+  return ref.watch(transactionRepositoryProvider).getTransactions();
 });
 
 final savingsHistoryProvider = FutureProvider<List<TransactionEntity>>((ref) {
