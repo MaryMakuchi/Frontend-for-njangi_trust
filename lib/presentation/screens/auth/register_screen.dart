@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/utils/api_helper.dart';
 import '../../../core/utils/validators.dart';
 import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
@@ -47,10 +48,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             password: _passwordController.text,
           );
       if (mounted) context.go(AppRoutes.verifyPhone);
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
+        final message = e is ApiException ? e.message : AppStrings.genericError;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppStrings.genericError)),
+          SnackBar(content: Text(message)),
         );
       }
     } finally {
