@@ -20,7 +20,9 @@ class AppConstants {
     return _prodApiBaseUrl;
   }
 
-  static const Duration apiTimeout = Duration(seconds: 30);
+  // 60s so the first request can survive a free-tier backend cold start
+  // (the hosting service can take ~50s to wake from idle).
+  static const Duration apiTimeout = Duration(seconds: 60);
   static const String jwtTokenKey = 'jwt_token';
   static const String refreshTokenKey = 'refresh_token';
   static const String userIdKey = 'user_id';
