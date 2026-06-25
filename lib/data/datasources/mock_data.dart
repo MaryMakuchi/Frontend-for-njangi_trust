@@ -20,6 +20,8 @@ class MockData {
     yearsActive: 2,
     globalRank: 12,
     badge: 'Trusted Member',
+    walletBalance: 75000,
+    savingsBalance: 2450000,
   );
 
   static final DashboardEntity dashboard = DashboardEntity(
@@ -42,6 +44,9 @@ class MockData {
       communityParticipation: 8.9,
     ),
     recentActivity: transactions.take(5).toList(),
+    walletBalance: 75000,
+    savingsBalance: 2450000,
+    totalBalance: 2525000,
   );
 
   static final List<GroupEntity> groups = [
@@ -61,6 +66,11 @@ class MockData {
       currentBeneficiaryId: 'mem_003',
       nextBeneficiaryId: 'mem_004',
       members: _houseAMembers,
+      targetAmount: 1000000,
+      durationMonths: 20,
+      pickingMode: 'random',
+      scheduleGenerated: true,
+      pickersPerCycle: 1,
     ),
     GroupEntity(
       id: 'grp_002',
@@ -290,11 +300,11 @@ class MockData {
   ];
 
   static final List<Map<String, dynamic>> savingsChartData = [
-    {'month': 'Jan', 'amount': 1800000.0},
-    {'month': 'Feb', 'amount': 1950000.0},
-    {'month': 'Mar', 'amount': 2100000.0},
-    {'month': 'Apr', 'amount': 2200000.0},
-    {'month': 'May', 'amount': 2350000.0},
-    {'month': 'Jun', 'amount': 2450000.0},
+    {'month': 'Jan', 'balance': 1800000.0, 'deposits': 200000.0, 'withdrawals': 50000.0},
+    {'month': 'Feb', 'balance': 1950000.0, 'deposits': 180000.0, 'withdrawals': 30000.0},
+    {'month': 'Mar', 'balance': 2100000.0, 'deposits': 220000.0, 'withdrawals': 70000.0},
+    {'month': 'Apr', 'balance': 2200000.0, 'deposits': 150000.0, 'withdrawals': 50000.0},
+    {'month': 'May', 'balance': 2350000.0, 'deposits': 240000.0, 'withdrawals': 90000.0},
+    {'month': 'Jun', 'balance': 2450000.0, 'deposits': 190000.0, 'withdrawals': 90000.0},
   ];
 }

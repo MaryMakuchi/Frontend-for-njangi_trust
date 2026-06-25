@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../providers/providers.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/custom_button.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _pageController = PageController();
   int _currentPage = 0;
 
@@ -45,6 +47,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
+  Future<void> _markDoneAndGo(String route) async {
+    await ref.read(onboardingCompleteProvider.notifier).markDone();
+    if (mounted) context.go(route);
+  }
+
   void _next() {
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
@@ -52,7 +59,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      context.go(AppRoutes.register);
+      _markDoneAndGo(AppRoutes.register);
     }
   }
 
@@ -65,7 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Align(
               alignment: Alignment.topRight,
               child: TextButton(
-                onPressed: () => context.go(AppRoutes.login),
+                onPressed: () => _markDoneAndGo(AppRoutes.login),
                 child: const Text('Skip'),
               ),
             ),
@@ -107,7 +114,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             const SizedBox(height: 12),
             TextButton(
-              onPressed: () => context.go(AppRoutes.login),
+              onPressed: () => _markDoneAndGo(AppRoutes.login),
               child: const Text('Already have an account? Login'),
             ),
             const SizedBox(height: 16),

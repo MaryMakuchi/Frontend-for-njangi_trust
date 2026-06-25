@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import 'balance_text.dart';
 
 class FinancialSummaryCard extends StatelessWidget {
   const FinancialSummaryCard({
@@ -9,6 +10,7 @@ class FinancialSummaryCard extends StatelessWidget {
     required this.icon,
     this.iconColor,
     this.onTap,
+    this.amount,
   });
 
   final String label;
@@ -16,6 +18,11 @@ class FinancialSummaryCard extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
   final VoidCallback? onTap;
+
+  /// When provided, the value is rendered with [BalanceText] so it can be
+  /// hidden/shown via the shared balance-visibility toggle. [value] is
+  /// ignored in this case.
+  final double? amount;
 
   @override
   Widget build(BuildContext context) {
@@ -65,16 +72,27 @@ class FinancialSummaryCard extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      height: 1.1,
-                      color: AppColors.darkGray,
+              child: amount != null
+                  ? BalanceText(
+                      amount!,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            height: 1.1,
+                            color: AppColors.darkGray,
+                          ),
+                      iconColor: AppColors.mediumGray,
+                    )
+                  : Text(
+                      value,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            height: 1.1,
+                            color: AppColors.darkGray,
+                          ),
+                      maxLines: 1,
                     ),
-                maxLines: 1,
-              ),
             ),
           ],
         ),

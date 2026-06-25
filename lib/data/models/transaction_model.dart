@@ -13,6 +13,9 @@ class TransactionModel {
       groupName: json['group_name'] as String?,
       hash: json['hash'] as String?,
       isCredit: json['is_credit'] as bool? ?? false,
+      onChain: json['on_chain'] as bool? ?? false,
+      explorerUrl: json['explorer_url'] as String?,
+      initiatedBy: json['initiated_by'] as String?,
     );
   }
 
@@ -28,6 +31,14 @@ class TransactionModel {
         return TransactionType.loanRepayment;
       case 'social_fund':
         return TransactionType.socialFund;
+      case 'wallet_topup':
+        return TransactionType.walletTopup;
+      case 'wallet_withdrawal':
+        return TransactionType.walletWithdrawal;
+      case 'savings_deposit':
+        return TransactionType.savingsDeposit;
+      case 'savings_withdrawal':
+        return TransactionType.savingsWithdrawal;
       default:
         return TransactionType.contribution;
     }

@@ -1,6 +1,6 @@
-# Njangi Trust Mobile Application
+# Nkap Mobile Application
 
-Production-ready Flutter frontend for **Njangi Trust** — a digital platform that automates traditional African/Cameroonian rotating savings and credit associations (Njangi/ROSCA).
+Production-ready Flutter frontend for **Nkap** — Cameroon's circle of money and trust — a digital platform that automates traditional African/Cameroonian rotating savings and credit associations (Njangi/ROSCA).
 
 ## Tech Stack
 

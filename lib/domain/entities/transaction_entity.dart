@@ -6,6 +6,10 @@ enum TransactionType {
   loanDisbursement,
   loanRepayment,
   socialFund,
+  walletTopup,
+  walletWithdrawal,
+  savingsDeposit,
+  savingsWithdrawal,
 }
 
 enum TransactionStatus { pending, completed, failed, verified }
@@ -21,6 +25,9 @@ class TransactionEntity extends Equatable {
     this.groupName,
     this.hash,
     this.isCredit = false,
+    this.onChain = false,
+    this.explorerUrl,
+    this.initiatedBy,
   });
 
   final String id;
@@ -32,8 +39,23 @@ class TransactionEntity extends Equatable {
   final String? groupName;
   final String? hash;
   final bool isCredit;
+  final bool onChain;
+  final String? explorerUrl;
+  final String? initiatedBy;
 
   @override
-  List<Object?> get props =>
-      [id, title, amount, type, status, date, groupName, hash, isCredit];
+  List<Object?> get props => [
+        id,
+        title,
+        amount,
+        type,
+        status,
+        date,
+        groupName,
+        hash,
+        isCredit,
+        onChain,
+        explorerUrl,
+        initiatedBy,
+      ];
 }

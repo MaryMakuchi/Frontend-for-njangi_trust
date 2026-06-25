@@ -14,9 +14,11 @@ import '../screens/contributions/make_contribution_screen.dart';
 import '../screens/contributions/payment_success_screen.dart';
 import '../screens/groups/create_group_screen.dart';
 import '../screens/groups/group_details_screen.dart';
+import '../screens/groups/group_finances_screen.dart';
 import '../screens/groups/groups_screen.dart';
 import '../screens/groups/join_group_screen.dart';
 import '../screens/home/dashboard_screen.dart';
+import '../screens/home/due_dates_screen.dart';
 import '../screens/loans/loans_screen.dart';
 import '../screens/loans/request_loan_screen.dart';
 import '../screens/main_shell.dart';
@@ -25,9 +27,11 @@ import '../screens/onboarding/splash_screen.dart';
 import '../screens/profile/blockchain_ledger_screen.dart';
 import '../screens/profile/mri_score_screen.dart';
 import '../screens/profile/notifications_screen.dart';
+import '../screens/profile/personal_info_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/savings_screen.dart';
 import '../screens/profile/social_fund_screen.dart';
+import '../screens/profile/wallet_accounts_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -45,6 +49,7 @@ class AppRoutes {
   static const groups = '/groups';
   static const groupDetails = '/groups/:id';
   static const createGroup = '/groups/create';
+  static const groupFinances = '/group-finances';
   static const joinGroup = '/groups/join';
   static const contributions = '/contributions';
   static const makeContribution = '/contributions/pay';
@@ -57,6 +62,9 @@ class AppRoutes {
   static const savings = '/savings';
   static const socialFund = '/social-fund';
   static const blockchainLedger = '/blockchain-ledger';
+  static const personalInfo = '/personal-info';
+  static const walletAccounts = '/wallet-accounts';
+  static const dueDates = '/due-dates';
 }
 
 class _AuthRefreshNotifier extends ChangeNotifier {
@@ -173,6 +181,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: ':id',
                 builder: (_, state) => GroupDetailsScreen(
                   groupId: state.pathParameters['id']!,
+                  initialTab: state.uri.queryParameters['tab'],
                 ),
               ),
             ],
@@ -232,6 +241,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.blockchainLedger,
         builder: (_, __) => const BlockchainLedgerScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.personalInfo,
+        builder: (_, __) => const PersonalInfoScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.walletAccounts,
+        builder: (_, __) => const WalletAccountsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.dueDates,
+        builder: (_, __) => const DueDatesScreen(),
+      ),
+      GoRoute(
+        path: '${AppRoutes.groupFinances}/:id',
+        builder: (_, state) => GroupFinancesScreen(
+          groupId: state.pathParameters['id']!,
+        ),
       ),
     ],
     errorBuilder: (_, state) => Scaffold(

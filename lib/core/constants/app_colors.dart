@@ -60,6 +60,15 @@ class AppColors {
     colors: [indigo, violet, orchid],
   );
 
+  /// Soft, near-white wash with a hint of purple — used behind dark-on-light
+  /// brand marks (e.g. splash screen) so the logo pops without a heavy block
+  /// of color.
+  static const LinearGradient lightSurfaceGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [white, purpleSurface],
+  );
+
   /// @deprecated Use [accentGradient] instead.
   static const LinearGradient goldGradient = accentGradient;
 }

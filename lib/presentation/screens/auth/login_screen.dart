@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/utils/api_helper.dart';
 import '../../../core/utils/validators.dart';
@@ -20,7 +21,9 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _phoneNumberController = TextEditingController();
   final _passwordController = TextEditingController();
+  String _countryCode = '+237';
   bool _isPhoneLogin = false;
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -28,6 +31,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void dispose() {
     _emailController.dispose();
+    _phoneNumberController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -38,7 +42,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       if (_isPhoneLogin) {
         await ref.read(authStateProvider.notifier).loginWithPhone(
-              _emailController.text.trim(),
+              '$_countryCode${_phoneNumberController.text.trim()}',
               _passwordController.text,
             );
       } else {
@@ -107,19 +111,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                CustomTextField(
-                  label: _isPhoneLogin ? 'Phone Number' : 'Email Address',
-                  controller: _emailController,
-                  hint: _isPhoneLogin ? '+237 6XX XXX XXX' : 'you@example.com',
-                  keyboardType: _isPhoneLogin
-                      ? TextInputType.phone
-                      : TextInputType.emailAddress,
-                  validator: _isPhoneLogin ? Validators.phone : Validators.email,
-                  prefixIcon: Icon(
-                    _isPhoneLogin ? Icons.phone_outlined : Icons.email_outlined,
-                    color: AppColors.mediumGray,
+                if (_isPhoneLogin)
+                  _PhoneInput(
+                    countryCode: _countryCode,
+                    phoneController: _phoneNumberController,
+                    onCountryCodeChanged: (value) =>
+                        setState(() => _countryCode = value),
+                  )
+                else
+                  CustomTextField(
+                    label: 'Email Address',
+                    controller: _emailController,
+                    hint: 'you@example.com',
+                    keyboardType: TextInputType.emailAddress,
+                    validator: Validators.email,
+                    prefixIcon: const Icon(
+                      Icons.email_outlined,
+                      color: AppColors.mediumGray,
+                    ),
                   ),
-                ),
                 const SizedBox(height: 16),
                 CustomTextField(
                   label: 'Password',
@@ -166,6 +176,65 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PhoneInput extends StatelessWidget {
+  const _PhoneInput({
+    required this.countryCode,
+    required this.phoneController,
+    required this.onCountryCodeChanged,
+  });
+
+  final String countryCode;
+  final TextEditingController phoneController;
+  final ValueChanged<String> onCountryCodeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 130,
+          child: DropdownButtonFormField<String>(
+            initialValue: countryCode,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            ),
+            items: AppConstants.countryCodes
+                .map(
+                  (country) => DropdownMenuItem(
+                    value: country['code'],
+                    child: Text(
+                      '${country['flag']} ${country['code']}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) {
+              if (value != null) {
+                onCountryCodeChanged(value);
+              }
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: TextFormField(
+            controller: phoneController,
+            keyboardType: TextInputType.phone,
+            validator: Validators.phone,
+            decoration: const InputDecoration(
+              hintText: '6XX XXX XXX',
+              prefixIcon: Icon(Icons.phone_outlined),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

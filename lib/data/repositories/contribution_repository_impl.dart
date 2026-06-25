@@ -28,6 +28,7 @@ class ContributionRepositoryImpl implements ContributionRepository {
     required String groupId,
     required double amount,
     required String paymentMethod,
+    String? linkedAccountId,
   }) async {
     if (AppConstants.useMockData) {
       final group = MockData.groups.firstWhere((g) => g.id == groupId);
@@ -50,6 +51,7 @@ class ContributionRepositoryImpl implements ContributionRepository {
         'group_id': groupId,
         'amount': amount,
         'payment_method': paymentMethod,
+        if (linkedAccountId != null) 'linked_account_id': linkedAccountId,
       },
     );
     return TransactionModel.fromJson(parseJsonResponse(response));

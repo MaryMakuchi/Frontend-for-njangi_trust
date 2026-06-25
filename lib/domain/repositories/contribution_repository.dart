@@ -7,5 +7,6 @@ abstract class ContributionRepository {
     required String groupId,
     required double amount,
     required String paymentMethod,
+    String? linkedAccountId,
   });
 }

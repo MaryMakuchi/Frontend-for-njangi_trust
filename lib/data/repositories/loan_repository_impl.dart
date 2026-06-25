@@ -41,7 +41,7 @@ class LoanRepositoryImpl implements LoanRepository {
     required double amount,
     required String purpose,
     required int durationMonths,
-    String? groupId,
+    required String groupId,
   }) async {
     if (AppConstants.useMockData) {
       return LoanEntity(
@@ -58,10 +58,46 @@ class LoanRepositoryImpl implements LoanRepository {
       'amount': amount,
       'purpose': purpose,
       'duration_months': durationMonths,
+      'group_id': groupId,
     };
-    if (groupId != null) body['group_id'] = groupId;
 
     final response = await _api.post('/loans/request/', body: body);
     return LoanModel.fromJson(parseJsonResponse(response));
+  }
+
+  @override
+  Future<LoanEntity> repayLoan({required String loanId, required double amount}) async {
+    if (AppConstants.useMockData) {
+      throw UnsupportedError('Loan repayment is not available in mock mode');
+    }
+
+    final response = await _api.post('/loans/$loanId/repay/', body: {'amount': amount});
+    return LoanModel.fromJson(parseJsonResponse(response));
+  }
+
+  @override
+  Future<List<PendingLoanVoteEntity>> getPendingVotes() async {
+    if (AppConstants.useMockData) return [];
+
+    final response = await _api.get('/loans/pending-votes/');
+    return parseListResponse(response)
+        .map((e) => PendingLoanVoteModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<LoanVoteResultEntity> voteOnLoan({
+    required String loanId,
+    required LoanVoteDecision decision,
+  }) async {
+    if (AppConstants.useMockData) {
+      throw UnsupportedError('Voting on loans is not available in mock mode');
+    }
+
+    final response = await _api.post(
+      '/loans/$loanId/vote/',
+      body: {'decision': decision == LoanVoteDecision.approve ? 'approve' : 'reject'},
+    );
+    return LoanVoteResultModel.fromJson(parseJsonResponse(response));
   }
 }

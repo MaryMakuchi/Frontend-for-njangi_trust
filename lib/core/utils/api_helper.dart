@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiException implements Exception {
-  ApiException(this.message, {this.statusCode});
+  ApiException(this.message, {this.statusCode, this.loanBlocked = false});
 
   final String message;
   final int? statusCode;
+  final bool loanBlocked;
 
   @override
   String toString() => message;
@@ -21,9 +22,11 @@ Map<String, dynamic> parseJsonResponse(http.Response response) {
   }
 
   String message = 'Request failed (${response.statusCode})';
+  bool loanBlocked = false;
   try {
     final body = jsonDecode(response.body);
     if (body is Map) {
+      if (body['loan_blocked'] == true) loanBlocked = true;
       if (body['detail'] != null) {
         message = body['detail'].toString();
       } else {
@@ -34,7 +37,7 @@ Map<String, dynamic> parseJsonResponse(http.Response response) {
       }
     }
   } catch (_) {}
-  throw ApiException(message, statusCode: response.statusCode);
+  throw ApiException(message, statusCode: response.statusCode, loanBlocked: loanBlocked);
 }
 
 List<dynamic> parseListResponse(http.Response response) {

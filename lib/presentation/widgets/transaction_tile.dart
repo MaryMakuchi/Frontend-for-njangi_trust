@@ -20,6 +20,12 @@ class TransactionTile extends StatelessWidget {
         return Icons.payments_outlined;
       case TransactionType.socialFund:
         return Icons.favorite_outline;
+      case TransactionType.walletTopup:
+      case TransactionType.walletWithdrawal:
+        return Icons.account_balance_wallet_outlined;
+      case TransactionType.savingsDeposit:
+      case TransactionType.savingsWithdrawal:
+        return Icons.savings_outlined;
     }
   }
 
@@ -57,6 +63,16 @@ class TransactionTile extends StatelessWidget {
                   Formatters.date(transaction.date),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
+                if (transaction.initiatedBy != null)
+                  Text(
+                    'By ${transaction.initiatedBy}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.lightGray,
+                          fontSize: 11,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
           ),

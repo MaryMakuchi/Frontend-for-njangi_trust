@@ -14,6 +14,8 @@ class UserModel extends UserEntity {
     super.yearsActive,
     super.globalRank,
     super.badge,
+    super.walletBalance,
+    super.savingsBalance,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,8 @@ class UserModel extends UserEntity {
       yearsActive: json['years_active'] as int? ?? 0,
       globalRank: json['global_rank'] as int? ?? 0,
       badge: json['badge'] as String?,
+      walletBalance: parseDouble(json['wallet_balance']),
+      savingsBalance: parseDouble(json['savings_balance']),
     );
   }
 
@@ -44,5 +48,7 @@ class UserModel extends UserEntity {
         'years_active': yearsActive,
         'global_rank': globalRank,
         'badge': badge,
+        'wallet_balance': walletBalance,
+        'savings_balance': savingsBalance,
       };
 }
