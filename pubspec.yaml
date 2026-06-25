@@ -37,3 +37,15 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+
+# App launcher icon generation. Place the source logo at the image_path below
+# (a square PNG, ideally 1024x1024), then run: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+  android: "ic_launcher"
+  ios: true
+  remove_alpha_ios: true
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
