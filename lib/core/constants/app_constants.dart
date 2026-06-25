@@ -1,19 +1,23 @@
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
-
 class AppConstants {
   AppConstants._();
 
   /// Set to true to use local mock data instead of the Django API.
   static const bool useMockData = false;
 
+  /// Deployed backend used by release/test builds (Render).
+  static const String _prodApiBaseUrl =
+      'https://njangi-trust-api.onrender.com/api/v1';
+
+  /// API base URL.
+  ///
+  /// Defaults to the deployed backend so distributed APKs work on real
+  /// devices out of the box. Override at build/run time for local dev:
+  ///   flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
   static String get apiBaseUrl {
     if (useMockData) return 'https://api.njangitrust.com/v1';
-    if (kIsWeb) return 'http://127.0.0.1:8000/api/v1';
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:8000/api/v1';
-    }
-    return 'http://127.0.0.1:8000/api/v1';
+    const override = String.fromEnvironment('API_BASE_URL');
+    if (override.isNotEmpty) return override;
+    return _prodApiBaseUrl;
   }
 
   static const Duration apiTimeout = Duration(seconds: 30);
