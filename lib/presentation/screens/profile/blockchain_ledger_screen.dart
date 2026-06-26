@@ -11,13 +11,18 @@ class BlockchainLedgerScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final transactionsAsync = ref.watch(transactionsProvider);
+    final scrollController = ScrollController();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Blockchain Ledger')),
       body: transactionsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
-        data: (transactions) => ListView.separated(
+        data: (transactions) => Scrollbar(
+          controller: scrollController,
+          thumbVisibility: true,
+          child: ListView.separated(
+          controller: scrollController,
           padding: const EdgeInsets.all(16),
           itemCount: transactions.length,
           separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -122,6 +127,7 @@ class BlockchainLedgerScreen extends ConsumerWidget {
               ),
             );
           },
+          ),
         ),
       ),
     );
