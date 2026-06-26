@@ -538,18 +538,21 @@ class _PlayNjangiConfirmSheetState extends ConsumerState<_PlayNjangiConfirmSheet
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.casino_outlined, color: AppColors.primary),
+              Row(
+                children: [
+                  const Icon(Icons.casino_outlined, color: AppColors.primary),
               const SizedBox(width: 8),
               Text('Play Njangi', style: Theme.of(context).textTheme.titleLarge),
             ],
@@ -718,7 +721,9 @@ class _PlayNjangiConfirmSheetState extends ConsumerState<_PlayNjangiConfirmSheet
             isLoading: _isLoading,
             onPressed: _confirmAndPlay,
           ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
